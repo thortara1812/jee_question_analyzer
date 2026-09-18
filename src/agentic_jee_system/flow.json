@@ -1,0 +1,114 @@
+{
+  "name": "AgenticJEESystem",
+  "state": {
+    "type": "json_schema",
+    "json_schema": {
+      "type": "object",
+      "required": [
+        "jee_question"
+      ],
+      "properties": {
+        "claim": {
+          "type": "string",
+          "description": "A JEE-related factual statement to fact-check (Capability 1)"
+        },
+        "solution": {
+          "type": "string",
+          "description": "Step-by-step solution from the JEE Solver"
+        },
+        "final_answer": {
+          "type": "string",
+          "description": "Student-friendly final answer combining all pipeline outputs"
+        },
+        "jee_question": {
+          "type": "string",
+          "description": "A JEE-level question to solve (Capability 2)"
+        },
+        "verification": {
+          "type": "string",
+          "description": "Verification verdict and corrected solution if needed from the JEE Verifier"
+        },
+        "question_analysis": {
+          "type": "string",
+          "description": "Structured analysis from the JEE Question Analyzer"
+        }
+      }
+    }
+  },
+  "schema": "crewai.flow/v1",
+  "methods": {
+    "jee_solver": {
+      "do": {
+        "call": "agent",
+        "with": {
+          "goal": "Solve the analyzed JEE question accurately using both the original question and the analyzer's structured output. Prioritize correctness over speed. Apply your own scientific and mathematical reasoning. If the analyzer has identified the wrong concept or approach, correct it.",
+          "role": "Expert JEE Mathematics, Physics and Chemistry Solver",
+          "input": "Solve the following JEE question using the structured analysis provided.\n\nORIGINAL QUESTION:\n${state.jee_question}\n\nSTRUCTURED ANALYSIS FROM ANALYZER:\n${outputs.jee_question_analyzer.raw}\n\nSOLVING INSTRUCTIONS:\n1. Read the original question carefully - do not rely solely on the analyzer interpretation.\n2. Select the appropriate solving method based on the concepts identified.\n3. If the analyzer identified the wrong concept or approach, state the correction and proceed with the correct one.\n4. Show every calculation step explicitly. Do not skip steps.\n5. In Physics: track all units and perform dimensional checks.\n6. In Chemistry: balance equations, handle moles and molarity precisely, apply reaction mechanisms correctly.\n7. In Mathematics: show all algebraic, calculus, or geometric steps without shortcuts.\n8. For MCQs: after computing the answer, explicitly compare it with each option and state which option matches.\n9. For Multiple Correct type: evaluate every option independently.\n10. If information is missing or ambiguous, state exactly what is missing rather than inventing data.\n\nProduce your output in exactly this format:\nSOLUTION APPROACH:\nSTEP 1:\nSTEP 2:\nSTEP 3:\n(continue as needed)\nCALCULATED ANSWER:\nSELECTED OPTION (if MCQ):\n\nExpected output: A complete step-by-step solution. SOLUTION APPROACH describes the method chosen. Each STEP is clearly numbered with reasoning and arithmetic shown. CALCULATED ANSWER states the final numerical or conceptual result with units where applicable. SELECTED OPTION names the matching MCQ option if relevant. If information is missing or ambiguous, a plain statement of what is missing.",
+          "verbose": true,
+          "backstory": "You are an IIT alumnus and seasoned JEE faculty member with 12 years of teaching experience. You have solved thousands of JEE Advanced and JEE Main problems. You are meticulous about dimensional analysis in Physics, precise about stoichiometry and reaction mechanisms in Chemistry, and rigorous about algebraic and calculus steps in Mathematics. You never skip steps that affect the final answer, and you always verify your selected MCQ option against your calculated result.",
+          "inject_date": true,
+          "llm": "groq/openai/gpt-oss-120b"
+        }
+      },
+      "start": false,
+      "listen": "jee_question_analyzer",
+      "router": false,
+      "description": "Reads the original question and the analyzer's structured output, selects the correct solving method, and works through a complete step-by-step solution with proper calculations, units, and MCQ option matching."
+    },
+    "jee_verifier": {
+      "do": {
+        "call": "agent",
+        "with": {
+          "goal": "Independently verify the solver's solution with the same rigor as a second examiner. Do not simply agree with the solver - recompute key calculations yourself to confirm or refute the result. Your job is to catch errors before they reach a student.",
+          "role": "Senior JEE Solution Verifier",
+          "input": "Independently verify the following JEE solution. Do NOT simply agree with the solver. Recompute important calculations yourself.\n\nORIGINAL QUESTION:\n${state.jee_question}\n\nANALYZER OUTPUT:\n${outputs.jee_question_analyzer.raw}\n\nSOLVER OUTPUT:\n${outputs.jee_solver.raw}\n\nVERIFICATION CHECKLIST — check every applicable item:\n1. Question interpretation: Was the question understood correctly?\n2. Concept selection: Is the chosen concept or law the right one for this situation?\n3. Formula correctness: Are the formulas or theorems applied in their correct form?\n4. Substitution: Were values substituted correctly with correct units?\n5. Arithmetic and algebra: Recompute at least one key intermediate step independently.\n6. Units and dimensions: Are units consistent throughout and correct in the final answer?\n7. Sign conventions: Are signs (positive/negative, direction) handled correctly?\n8. Boundary and constraint conditions: Are any special conditions or constraints respected?\n9. MCQ option matching: Does the computed answer actually match the selected option? If no option matches the verified answer, report this explicitly — do NOT treat a mismatched option set as an error in the solution.\n10. Alternative interpretation: Could the question be read differently, and if so, does it change the answer?\n11. Logical consistency: Is the final answer physically or mathematically plausible?\n12. Solver-Analyzer disagreement: If the solver corrected the analyzer, is that correction itself correct?\n\nUSE EXACTLY ONE OF THESE THREE VERDICTS:\n\nVERDICT: VERIFIED\nUse when the Solver's reasoning and final answer are correct. If the calculation is correct but no MCQ option matches, still use VERIFIED and explicitly add: \"No provided option matches the verified answer.\"\nCHECKS PERFORMED: (brief list of what you checked)\nCONFIRMED ANSWER: (restate the final answer)\n\nVERDICT: CORRECTED\nUse ONLY when the Solver contains an actual mathematical, physical, chemical, logical, or calculation error and you have corrected it. Do NOT use CORRECTED simply because the question's answer options are incorrect or do not match the verified answer.\nERROR FOUND: (describe the specific error clearly)\nCORRECTED SOLUTION: (provide the corrected step-by-step solution)\nCORRECTED ANSWER: (state the correct final answer)\n\nVERDICT: INVALID QUESTION\nUse when the question itself contains inconsistent information, internally contradictory data, missing essential information, or incorrect/impossible options that prevent a reliable answer — and this flaw is in the question, not the solver.\nREASON: (explain the specific flaw in the question)\n\nExpected output: Exactly one of three verdicts: (1) VERDICT: VERIFIED — with CHECKS PERFORMED and CONFIRMED ANSWER, and an explicit note if no MCQ option matches the verified answer; (2) VERDICT: CORRECTED — with ERROR FOUND, CORRECTED SOLUTION, and CORRECTED ANSWER, used only when the solver made an actual error; (3) VERDICT: INVALID QUESTION — with REASON explaining the specific flaw in the question itself.",
+          "verbose": true,
+          "backstory": "You are a senior IIT professor and JEE paper-setter with 20 years of experience. You have reviewed thousands of JEE solutions and your speciality is catching the subtle errors that solvers miss: sign errors, wrong formula variants, unit mismatches, incorrect option matching, and boundary condition violations. You are known for your independent re-derivation approach — you never just read the solver's work and nod along. You recompute critical steps yourself. You also know the difference between a flawed solution and a flawed question: you only return CORRECTED when the solver made a genuine error, not when the examiner's option set is wrong.",
+          "inject_date": true,
+          "llm": "groq/openai/gpt-oss-120b"
+        }
+      },
+      "start": false,
+      "listen": "jee_solver",
+      "router": false,
+      "description": "Independently re-checks the question interpretation, concept choice, formulas, arithmetic, units, signs, and MCQ option match. Returns one of three verdicts: VERIFIED (solution is correct), CORRECTED (actual mathematical/logical error found and fixed), or INVALID QUESTION (the question itself is flawed). Never uses CORRECTED solely because MCQ options are wrong — if the calculation is correct but no option matches, returns VERIFIED with an explicit note."
+    },
+    "jee_question_analyzer": {
+      "do": {
+        "call": "agent",
+        "with": {
+          "goal": "Understand and classify a JEE question with precision before any solution attempt. Produce a structured analysis that a specialist solver can use directly.",
+          "role": "JEE Question Analysis Specialist",
+          "input": "Analyze the following JEE question and produce a structured analysis. Do NOT solve the question — only classify and analyze it.\n\nQuestion: ${state.jee_question}\n\nIf the question cannot be reliably parsed (ambiguous, incomplete, or incomprehensible), begin your response with: PARSE_ERROR: followed by a plain-language explanation of what is unclear or missing. Otherwise, produce your analysis in exactly this format:\n\nSUBJECT: (Mathematics / Physics / Chemistry)\nCHAPTER:\nTOPIC:\nSUB-TOPIC:\nQUESTION TYPE: (MCQ / Multiple Correct / Numerical Value / Assertion-Reasoning / Match the Following / Integer Answer)\nDIFFICULTY: (Easy / Moderate / Hard)\nGIVEN INFORMATION: (list all given values, conditions, and data)\nWHAT IS ASKED: (state precisely what needs to be found or determined)\nKEY CONCEPTS: (list the core physics/chemistry/mathematics concepts involved)\nRELEVANT FORMULAS: (list specific formulas, laws, or theorems that apply)\nPROPOSED APPROACH: (describe the recommended solving strategy in 2-4 sentences — do not solve)\nIMPORTANT CONDITIONS: (note any constraints, boundary conditions, or common traps)\n\nExpected output: A structured classification block with all 12 fields filled in accurately: SUBJECT, CHAPTER, TOPIC, SUB-TOPIC, QUESTION TYPE, DIFFICULTY, GIVEN INFORMATION, WHAT IS ASKED, KEY CONCEPTS, RELEVANT FORMULAS, PROPOSED APPROACH, IMPORTANT CONDITIONS. Alternatively, a PARSE_ERROR message if the question cannot be reliably understood.",
+          "verbose": true,
+          "backstory": "You are an expert JEE mentor who has spent 15 years analyzing thousands of JEE questions across Mathematics, Physics, and Chemistry. You have an encyclopedic knowledge of JEE syllabi, question patterns, and common pitfalls. Your structured analyses are renowned for being thorough yet concise — they always give the solver exactly the context needed to solve correctly without pre-solving the question.",
+          "inject_date": true,
+          "llm": "groq/openai/gpt-oss-120b"
+        }
+      },
+      "start": true,
+      "router": false,
+      "description": "Classifies and structures the incoming JEE question — subject, chapter, topic, question type, difficulty, given values, key concepts, relevant formulas, and proposed approach — before passing to the solver."
+    },
+    "final_student_response": {
+      "do": {
+        "call": "agent",
+        "with": {
+          "goal": "Compose a clear, structured, student-friendly final answer that combines the classifier's analysis, the solver's solution, and the verifier's verdict into one complete response. Apply the correct verdict rules precisely. Make the response understandable to a JEE student without sacrificing accuracy.",
+          "role": "JEE Student Response Composer",
+          "input": "Create a complete student-facing response for the following JEE question. Use all four inputs below.\n\nORIGINAL QUESTION:\n${state.jee_question}\n\nANALYZER OUTPUT:\n${outputs.jee_question_analyzer.raw}\n\nSOLVER OUTPUT:\n${outputs.jee_solver.raw}\n\nVERIFIER OUTPUT:\n${outputs.jee_verifier.raw}\n\nCOMPOSITION RULES (apply exactly one based on the verifier verdict):\n\nCase A - VERDICT: VERIFIED and no MCQ option matches the verified answer:\n- Use the solver's solution as the authoritative solution.\n- Verification Status: VERIFIED\n- Add an explicit note: No provided option matches the verified answer. The calculated answer is [answer].\n- Do NOT change the verdict to CORRECTED.\n\nCase B - VERDICT: VERIFIED and an MCQ option does match:\n- Use the solver's solution as the authoritative solution.\n- Verification Status: VERIFIED\n\nCase C - VERDICT: CORRECTED:\n- Use the VERIFIER's corrected solution as the authoritative solution, not the solver's original.\n- Verification Status: CORRECTED\n- Briefly describe what error was found and corrected.\n\nCase D - VERDICT: INVALID QUESTION:\n- Do not attempt to present a solution.\n- In Section 4, explain the specific flaw in the question as identified by the verifier.\n- Verification Status: INVALID QUESTION\n- Advise the student to check the question source.\n\nIf the analyzer output begins with PARSE_ERROR:\n- Produce an appropriate error response explaining the issue clearly.\n- Advise the student to provide a clearer question.\n\nADDITIONAL RULES:\n- Present calculations clearly with numbered steps.\n- Use plain, jargon-free language in explanations.\n- Do not pad the response with unnecessary text.\n\nProduce the response in exactly this format:\n\n## 1. Question Classification\nSubject:\nChapter:\nTopic:\nQuestion Type:\nDifficulty:\n\n## 2. Key Concept\n(1-3 sentences on the core concept or formula required)\n\n## 3. Solution Approach\n(1-3 sentences explaining the strategy)\n\n## 4. Step-by-Step Solution\n(Numbered steps with calculations. Use the verifier-approved solution. If INVALID QUESTION, explain the flaw here instead.)\n\n## 5. Verification\nVerification Status: VERIFIED or CORRECTED or INVALID QUESTION\n(2-4 sentences summarising what was checked, what correction or flaw was identified if any, and the explicit note about non-matching MCQ options if applicable)\n\n## 6. Final Answer\nAnswer:\nOption: (if MCQ, or state No provided option matches the verified answer if applicable)\n\nExpected output: A complete, well-structured student response following all six sections: Question Classification, Key Concept, Solution Approach, Step-by-Step Solution, Verification, and Final Answer. The verdict is applied precisely: VERIFIED uses the solver's solution with an explicit note if no MCQ option matches; CORRECTED uses the verifier's corrected solution; INVALID QUESTION explains the question flaw. Language is clear and suitable for a JEE student.",
+          "verbose": true,
+          "backstory": "You are an experienced JEE mentor who specialises in presenting complex solutions in a way that students can follow and learn from. You apply the verifier's verdict with precision: VERIFIED means the solver was right (even if no MCQ option happens to match the verified answer), CORRECTED means the solver made a genuine error that was fixed, and INVALID QUESTION means the question itself is flawed. You never confuse a wrong option set with a wrong solution.",
+          "inject_date": true,
+          "llm": "groq/openai/gpt-oss-120b"
+        }
+      },
+      "start": false,
+      "listen": "jee_verifier",
+      "router": false,
+      "description": "Combines the question, analysis, solution, and verification into a clean, structured, student-friendly final answer. Handles all three verifier verdicts: VERIFIED (uses solver's solution), CORRECTED (uses verifier's corrected solution), and INVALID QUESTION (reports the flaw clearly). If VERIFIED but no MCQ option matches, reports this explicitly rather than marking as CORRECTED."
+    }
+  },
+  "description": "Agentic AI-Based JEE Question Solving and Verification System. Combines a JEE Fact Checker (claim extraction + official fact-checking) with a multi-agent JEE Question Solver (analyzer → solver → verifier → student-friendly final answer)."
+}
+
