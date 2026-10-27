@@ -1,0 +1,14 @@
+[
+  {"id":"math-linear","subject":"Mathematics","question":"Solve 2x + 5 = 15.","operation":"linear_equation","values":{"a":2,"b":5,"c":15},"field":"x","expected":5},
+  {"id":"math-fraction","subject":"Mathematics","question":"Solve 4x + 3 = 4.","operation":"linear_equation","values":{"a":4,"b":3,"c":4},"field":"x","expected":0.25},
+  {"id":"physics-block","subject":"Physics","question":"A 2 kg block starts from rest under an 8 N horizontal force on a frictionless surface for 5 seconds. Find its final kinetic energy.","operation":"force_motion","values":{"mass":2,"force":8,"time":5,"initial_velocity":0},"field":"energy_j","expected":400},
+  {"id":"physics-mcq","subject":"Physics","question":"Find the kinetic energy of a 2 kg body moving at 20 m/s. Options: A) 200 J B) 400 J C) 800 J.","operation":"kinetic_energy","values":{"mass":2,"velocity":20},"field":"energy_j","expected":400,"option":"B"},
+  {"id":"physics-no-option","subject":"Physics","question":"Find the kinetic energy of a 2 kg body moving at 20 m/s. Options: A) 200 J B) 800 J. State if no option matches.","operation":"kinetic_energy","values":{"mass":2,"velocity":20},"field":"energy_j","expected":400,"option":null},
+  {"id":"physics-circular","subject":"Physics","question":"A particle moves in a circle of radius 0.5 m with angular velocity 4 rad/s. Find centripetal acceleration.","operation":"centripetal_acceleration","values":{"radius":0.5,"angular_velocity":4},"field":"acceleration_ms2","expected":8},
+  {"id":"physics-unit","subject":"Physics","question":"Convert 36 km/h to m/s.","operation":"kmh_to_ms","values":{"speed":36},"field":"speed_ms","expected":10},
+  {"id":"chemistry-moles","subject":"Chemistry","question":"How many moles are in 18 g of water with molar mass 18 g/mol?","operation":"moles","values":{"mass_g":18,"molar_mass_g_mol":18},"field":"moles","expected":1},
+  {"id":"chemistry-concentration","subject":"Chemistry","question":"Find molarity for 0.5 mol solute in 2 L of solution.","operation":"molarity","values":{"moles":0.5,"volume_l":2},"field":"molarity_mol_l","expected":0.25},
+  {"id":"chemistry-gas","subject":"Chemistry","question":"An ideal gas has pressure 8314.462618 Pa, volume 1 m^3, temperature 1000 K. Using R=8.314462618 J/(mol K), find moles.","operation":"ideal_gas_moles","values":{"pressure_pa":8314.462618,"volume_m3":1,"temperature_k":1000},"field":"moles","expected":1},
+  {"id":"ambiguous","subject":"Physics","question":"A block is moving. Find its kinetic energy.","expected_status":"needs_review"},
+  {"id":"contradiction","subject":"Physics","question":"A block is stationary and simultaneously has a nonzero speed in the same reference frame at the same time. Find its kinetic energy.","expected_status":"needs_review"}
+]

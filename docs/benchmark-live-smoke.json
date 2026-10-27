@@ -1,0 +1,132 @@
+{
+  "timestamp_utc": "2026-10-27T18:01:31.258548+00:00",
+  "scope": "live provider pipeline",
+  "cases": 1,
+  "passed": 1,
+  "completed": 1,
+  "completion_rate": 1.0,
+  "accuracy": 1.0,
+  "median_seconds": 47.95178009997471,
+  "p95_seconds": 47.95178009997471,
+  "false_accept_count": 0,
+  "false_accept_rate_among_verified": 0.0,
+  "rate_limit_attempts": 0,
+  "transient_attempts": 0,
+  "provider_usage": [
+    {
+      "total_tokens": 875,
+      "prompt_tokens": 488,
+      "cached_prompt_tokens": 0,
+      "completion_tokens": 387,
+      "reasoning_tokens": 0,
+      "cache_creation_tokens": 0,
+      "successful_requests": 1
+    },
+    {
+      "total_tokens": 3147,
+      "prompt_tokens": 2613,
+      "cached_prompt_tokens": 0,
+      "completion_tokens": 534,
+      "reasoning_tokens": 0,
+      "cache_creation_tokens": 0,
+      "successful_requests": 3
+    },
+    {
+      "total_tokens": 5071,
+      "prompt_tokens": 4367,
+      "cached_prompt_tokens": 0,
+      "completion_tokens": 704,
+      "reasoning_tokens": 0,
+      "cache_creation_tokens": 0,
+      "successful_requests": 4
+    }
+  ],
+  "cost": null,
+  "limitations": "Numeric scorer requires human review for symbolic answers and units. Cost is unmeasured. Failed requests may lack provider token usage. Fact-check quality is covered by mocked control-flow tests, not this numeric benchmark.",
+  "results": [
+    {
+      "id": "physics-block",
+      "status": "verified",
+      "metrics": [
+        {
+          "stage": "JEE Question Analysis Specialist",
+          "attempt": 1,
+          "seconds": 3.4210000000020955,
+          "status": "ok",
+          "usage": {
+            "total_tokens": 875,
+            "prompt_tokens": 488,
+            "cached_prompt_tokens": 0,
+            "completion_tokens": 387,
+            "reasoning_tokens": 0,
+            "cache_creation_tokens": 0,
+            "successful_requests": 1
+          }
+        },
+        {
+          "stage": "Expert JEE Solver",
+          "attempt": 1,
+          "seconds": 19.578999999997905,
+          "status": "ok",
+          "usage": {
+            "total_tokens": 3147,
+            "prompt_tokens": 2613,
+            "cached_prompt_tokens": 0,
+            "completion_tokens": 534,
+            "reasoning_tokens": 0,
+            "cache_creation_tokens": 0,
+            "successful_requests": 3
+          }
+        },
+        {
+          "stage": "Senior JEE Solution Verifier",
+          "attempt": 1,
+          "seconds": 21.09299999999348,
+          "status": "ok",
+          "usage": {
+            "total_tokens": 5071,
+            "prompt_tokens": 4367,
+            "cached_prompt_tokens": 0,
+            "completion_tokens": 704,
+            "reasoning_tokens": 0,
+            "cache_creation_tokens": 0,
+            "successful_requests": 4
+          }
+        }
+      ],
+      "tool_successes": 3,
+      "tool_calls": [
+        {
+          "tool": "calculator",
+          "success": true,
+          "stage": "Expert JEE Solver",
+          "expression": "8/2",
+          "value": 4.0
+        },
+        {
+          "tool": "calculator",
+          "success": true,
+          "stage": "Expert JEE Solver",
+          "expression": "0.5*2*20**2",
+          "value": 400.0
+        },
+        {
+          "tool": "calculator",
+          "success": false,
+          "stage": "Senior JEE Solution Verifier"
+        },
+        {
+          "tool": "calculator",
+          "success": true,
+          "stage": "Senior JEE Solution Verifier",
+          "expression": "0.5*2*(4*5)**2",
+          "value": 400.0
+        }
+      ],
+      "answer": "400 J",
+      "correct": true,
+      "false_accept": false,
+      "seconds": 47.95178009997471
+    }
+  ]
+}

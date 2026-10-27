@@ -1,0 +1,90 @@
+{
+  "timestamp_utc": "2026-10-27T18:04:58.389910+00:00",
+  "scope": "deterministic formula registry only; not LLM accuracy",
+  "cases": 10,
+  "passed": 10,
+  "completed": 10,
+  "completion_rate": 1.0,
+  "accuracy": 1.0,
+  "median_seconds": 5.54998405277729e-06,
+  "p95_seconds": 3.519997699186206e-05,
+  "false_accept_count": null,
+  "false_accept_rate_among_verified": null,
+  "rate_limit_attempts": null,
+  "transient_attempts": null,
+  "provider_usage": null,
+  "cost": null,
+  "limitations": "Numeric scorer requires human review for symbolic answers and units. Cost is unmeasured. Failed requests may lack provider token usage. Fact-check quality is covered by mocked control-flow tests, not this numeric benchmark.",
+  "results": [
+    {
+      "id": "math-linear",
+      "value": 5.0,
+      "correct": true,
+      "status": "completed",
+      "seconds": 3.519997699186206e-05
+    },
+    {
+      "id": "math-fraction",
+      "value": 0.25,
+      "correct": true,
+      "status": "completed",
+      "seconds": 8.799979696050286e-06
+    },
+    {
+      "id": "physics-block",
+      "value": 400.0,
+      "correct": true,
+      "status": "completed",
+      "seconds": 9.300012607127428e-06
+    },
+    {
+      "id": "physics-mcq",
+      "value": 400.0,
+      "correct": true,
+      "status": "completed",
+      "seconds": 5.699985194951296e-06
+    },
+    {
+      "id": "physics-no-option",
+      "value": 400.0,
+      "correct": true,
+      "status": "completed",
+      "seconds": 4.5000051613897085e-06
+    },
+    {
+      "id": "physics-circular",
+      "value": 8.0,
+      "correct": true,
+      "status": "completed",
+      "seconds": 5.999987479299307e-06
+    },
+    {
+      "id": "physics-unit",
+      "value": 10.0,
+      "correct": true,
+      "status": "completed",
+      "seconds": 4.0000013541430235e-06
+    },
+    {
+      "id": "chemistry-moles",
+      "value": 1.0,
+      "correct": true,
+      "status": "completed",
+      "seconds": 4.3000036384910345e-06
+    },
+    {
+      "id": "chemistry-concentration",
+      "value": 0.25,
+      "correct": true,
+      "status": "completed",
+      "seconds": 4.7000066842883825e-06
+    },
+    {
+      "id": "chemistry-gas",
+      "value": 1.0,
+      "correct": true,
+      "status": "completed",
+      "seconds": 5.399982910603285e-06
+    }
+  ]
+}
