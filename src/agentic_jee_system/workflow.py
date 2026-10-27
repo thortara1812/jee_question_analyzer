@@ -4,6 +4,7 @@ from .backend import CrewBackend
 from .evidence import authoritative, retrieve
 from .schemas import Analysis, Claims, FactVerdict, Result, Solution, Verification
 from .reliability import ServiceError
+from .presentation import formula_block, student_text
 
 
 def validate_input(text: str) -> str:
@@ -17,15 +18,16 @@ def validate_input(text: str) -> str:
 def compose(analysis: Analysis, solution: Solution, verification: Verification) -> str:
     """Formatting cannot upgrade a rejected answer into a verified answer."""
     intro = f"**{analysis.subject} · {analysis.topic}**\n\n"
-    checks = "\n".join(f"- {check}" for check in verification.checks)
+    checks = "\n".join(f"- {student_text(check)}" for check in verification.checks)
     if verification.verdict != "verified" or verification.errors or solution.limitations:
         issues = verification.errors + solution.limitations
         return (intro + "**Verification: needs review — no confirmed answer.**\n\n"
                 + "\n".join(f"- {item}" for item in issues) + "\n\n" + verification.correction)
-    steps = "\n\n".join(f"{i}. {step}" for i, step in enumerate(solution.steps, 1))
+    steps = "\n\n".join(f"**Step {i}**\n\n{student_text(step)}" for i, step in enumerate(solution.steps, 1))
     option = solution.option or ("No provided option matches." if analysis.options else "Not applicable")
-    return (intro + f"**Formula:** {solution.formula}\n\n{steps}\n\n"
-            + f"**Final answer:** {solution.answer}\n\n**Option:** {option}\n\n"
+    option_text = f"\n\n**Option:** {option}" if analysis.options else ""
+    return (intro + f"**Equation to use**\n\n{formula_block(solution.formula)}\n\n{steps}\n\n"
+            + f"**Final answer:** {student_text(solution.answer)}{option_text}\n\n"
             + f"**Verification: verified**\n\n{checks}")
 
 
@@ -77,7 +79,12 @@ def run(text: str, mode: str = "solve", subject: str = "Auto", *, backend=None, 
     solve_instruction = (
         "Solve using the appropriate method and concise derivation. Use bounded_calculator for numerical substitutions. "
         "Check units and compare all MCQ options; use null if none match. Mark missing facts as limitations. "
-        "Use $...$ for inline and $$...$$ for display mathematics. Do not assign a verification verdict.")
+        "Write for a student: explain each operation in a short plain-English sentence, then show its equation on a separate line. "
+        "For example: 'Subtract 5 from both sides.\n\n$$2x = 15 - 5 = 10$$'. "
+        "For Physics, explain what each formula finds and include units at each substitution. "
+        "The formula field must contain only the governing equation(s), not the full working. "
+        "Never use arrows, Rightarrow, therefore symbols or semicolon-separated derivation chains. "
+        "Always enclose LaTeX in $...$ inline or $$...$$ on separate lines. Do not assign a verification verdict.")
     verify_instruction = (
         "Independently check the original problem and candidate: equations, assumptions, signs, units, boundaries and MCQ match. "
         "Recalculate numerical results with bounded_calculator, preferably another path. Reject errors with specific correction instructions. "

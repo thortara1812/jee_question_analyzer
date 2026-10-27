@@ -3,7 +3,9 @@ import sqlite3
 import streamlit as st
 from agentic_jee_system.history import clear, recent, save
 from agentic_jee_system.reliability import ServiceError
-from agentic_jee_system.workflow import run
+from agentic_jee_system.workflow import compose, run
+from agentic_jee_system.schemas import Result
+from agentic_jee_system.presentation import student_text
 
 st.set_page_config(page_title="Agentic JEE Assistant", page_icon="🎓", layout="wide")
 st.title("Agentic JEE Assistant")
@@ -18,6 +20,16 @@ SAMPLES = {
 def use_sample(subject):
     st.session_state.question = SAMPLES[subject]
     st.session_state.pop("result", None)
+
+
+def display_markdown(data):
+    """Apply the current presentation to saved results without another model call."""
+    result = Result.model_validate(data)
+    if result.mode == "solve":
+        if result.analysis and result.solution and result.verification:
+            return compose(result.analysis, result.solution, result.verification)
+        return student_text(result.markdown)
+    return result.markdown
 
 
 with st.sidebar:
@@ -59,7 +71,7 @@ if submitted:
 if st.session_state.get("result"):
     result = st.session_state.result
     st.caption(f"Workflow: {result['mode']} · Status: {result['status']}")
-    st.markdown(result["markdown"])
+    st.markdown(display_markdown(result))
     with st.expander("Computational tool use"):
         st.json(result["tool_calls"] or {"note": "No computational tool invocation recorded."})
     if result["evidence"]:
@@ -74,7 +86,7 @@ with st.expander("Previous locally saved requests"):
         for item in recent():
             st.caption(item["created"] + " UTC")
             st.write(item["question"])
-            st.markdown(item["result"]["markdown"])
+            st.markdown(display_markdown(item["result"]))
     except (OSError, sqlite3.Error):
         st.info("Local history is unavailable.")
 st.caption("Verification is an additional check, not a guarantee. Review answers against your textbook.")

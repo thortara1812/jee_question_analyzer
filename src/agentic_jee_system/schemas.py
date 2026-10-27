@@ -21,8 +21,9 @@ class Analysis(Contract):
 
 
 class Solution(Contract):
-    formula: str
-    steps: list[str] = Field(min_length=1, max_length=12)
+    formula: str = Field(description="Governing equation only, without arrow chains or worked substitutions.")
+    steps: list[str] = Field(min_length=1, max_length=12,
+        description="Each step explains the operation in plain English, then displays its equation using $$ delimiters. No arrows or raw unwrapped LaTeX.")
     answer: str
     option: str | None
     limitations: list[str]
