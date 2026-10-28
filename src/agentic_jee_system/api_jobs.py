@@ -32,7 +32,7 @@ def _isolated_work(runner, payload, sender):
         # Render needs enough information to diagnose runtime failures, but provider
         # messages and question text may contain sensitive data and are never logged.
         logger.error("isolated job failed: code=%s exception_type=%s", code, type(exc).__name__)
-        sender.send({"error_code": code})
+        sender.send({"error_code": code, "retry_after_seconds": getattr(exc, "retry_after_seconds", None)})
     finally:
         sender.close()
 
@@ -117,6 +117,7 @@ class JobManager:
             with self.lock:
                 self.jobs[job_id].error = PUBLIC_FAILURES[code]
                 self.jobs[job_id].error_code = code
+                self.jobs[job_id].retry_after_seconds = getattr(exc, "retry_after_seconds", None)
                 self.jobs[job_id].status = "failed"
         finally:
             with self.lock:
@@ -143,7 +144,8 @@ class JobManager:
                 raise ServiceError("Backend worker stopped before producing a result.") from None
             if "error_code" in payload:
                 code = payload["error_code"]
-                raise ServiceError(PUBLIC_FAILURES.get(code, PUBLIC_FAILURES["workflow_failed"]), code=code)
+                raise ServiceError(PUBLIC_FAILURES.get(code, PUBLIC_FAILURES["workflow_failed"]), code=code,
+                                   retry_after_seconds=payload.get("retry_after_seconds"))
             return Result.model_validate(payload["result"])
         finally:
             sender.close()

@@ -1,6 +1,7 @@
 """Server-to-server Streamlit integration; never retry an uncertain job submission."""
 import os
 import hashlib
+import math
 import time
 from urllib.parse import urlsplit
 from uuid import uuid4
@@ -127,6 +128,8 @@ def run_remote(question: str, mode="solve", subject="Auto", *, client=None, slee
             if snapshot.status == "failed":
                 # Only show locally allowlisted messages, never arbitrary server errors.
                 message = PUBLIC_FAILURES.get(snapshot.error_code, PUBLIC_FAILURES["workflow_failed"])
+                if snapshot.error_code == "rate_limit" and snapshot.retry_after_seconds is not None:
+                    message += f" Groq requested a cooldown of {math.ceil(snapshot.retry_after_seconds)} seconds when this job failed; allow that time before retrying."
                 clear_state()
                 raise ServiceError(message, code=snapshot.error_code or "workflow_failed")
             if clock() >= deadline:

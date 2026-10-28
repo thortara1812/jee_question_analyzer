@@ -25,3 +25,4 @@ class JobSnapshot(Contract):
     result: Result | None = None
     error: str | None = None
     error_code: str | None = None
+    retry_after_seconds: float | None = Field(default=None, ge=0, le=604800, allow_inf_nan=False)

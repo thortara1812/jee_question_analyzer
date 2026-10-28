@@ -111,11 +111,12 @@ class APITests(unittest.TestCase):
 
     def test_safe_provider_failure_category_reaches_frontend(self):
         def failed(*_):
-            raise ServiceError("SECRET provider text", code="rate_limit")
+            raise ServiceError("SECRET provider text", code="rate_limit", retry_after_seconds=125)
         with patch.dict("os.environ", ENV), TestClient(create_app(failed), headers=AUTH) as client:
             with self.assertRaisesRegex(ServiceError, "rate limit") as ctx:
                 run_remote(**PAYLOAD, client=client, sleep=lambda _: time.sleep(.005), wait_seconds=2)
             self.assertNotIn("SECRET", str(ctx.exception))
+            self.assertIn("125 seconds", str(ctx.exception))
 
 
 class APIClientTests(unittest.TestCase):

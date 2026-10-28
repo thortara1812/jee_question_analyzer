@@ -182,6 +182,17 @@ class WorkflowTests(unittest.TestCase):
 
 
 class ReliabilityTests(unittest.TestCase):
+    def test_long_rate_limit_cooldown_survives_without_sleeping(self):
+        class RateLimitError(Exception):
+            status_code = 429
+            response = SimpleNamespace(headers={"retry-after": "125"})
+        delays = []
+        with self.assertRaises(ServiceError) as ctx:
+            retry_call(lambda: (_ for _ in ()).throw(RateLimitError("SECRET")), sleep=delays.append)
+        self.assertEqual(ctx.exception.retry_after_seconds, 125)
+        self.assertEqual(delays, [])
+        self.assertNotIn("SECRET", str(ctx.exception))
+
     def test_429_retry_after_and_metrics(self):
         class RateLimitError(Exception):
             status_code = 429

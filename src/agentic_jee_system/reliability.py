@@ -1,5 +1,6 @@
 """Bounded transient retries. Provider messages never reach UI or logs."""
 import random
+import math
 import time
 from datetime import datetime, timezone
 from email.utils import parsedate_to_datetime
@@ -9,15 +10,17 @@ from urllib.error import URLError
 class ServiceError(RuntimeError):
     """Sanitized failure safe to present to students."""
 
-    def __init__(self, message: str, code: str = "workflow_failed"):
+    def __init__(self, message: str, code: str = "workflow_failed", retry_after_seconds=None):
         super().__init__(message)
         self.code = code
+        self.retry_after_seconds = (float(retry_after_seconds) if isinstance(retry_after_seconds, (int, float))
+            and math.isfinite(retry_after_seconds) and 0 <= retry_after_seconds <= 604800 else None)
 
 
 PUBLIC_FAILURES = {
     "job_timeout": "This question exceeded the backend's execution time limit. Its worker was stopped; try a shorter or clearer question.",
     "authentication": "The model provider rejected the backend credentials. Check GROQ_API_KEY on Render.",
-    "rate_limit": "The model provider's rate limit was reached. Wait before retrying.",
+    "rate_limit": "Groq's request or token rate limit was reached. Check Groq Console Usage and Limits for the reset time before retrying.",
     "transient": "The model provider timed out or is temporarily unavailable. Please retry later.",
     "invalid_request": "The model provider rejected the backend request. Check the configured model and backend logs.",
     "provider_compatibility": "The model request contains unsupported provider metadata. Deploy the latest backend compatibility fix.",
@@ -70,9 +73,11 @@ def retry_call(call, *, attempts=3, sleep=time.sleep, metrics=None, stage="reque
             if metrics is not None:
                 metrics.append({"stage": stage, "attempt": attempt + 1,
                                 "seconds": time.monotonic() - started, "status": kind})
-            if kind not in ("rate_limit", "transient") or attempt + 1 == attempts:
-                raise ServiceError(f"Service request failed ({kind}). Please check configuration or retry later.", code=kind) from None
             delay = retry_after(exc)
+            if kind not in ("rate_limit", "transient") or attempt + 1 == attempts:
+                raise ServiceError(f"Service request failed ({kind}). Please check configuration or retry later.", code=kind,
+                                   retry_after_seconds=delay) from None
             if delay is not None and delay > 60:
-                raise ServiceError("Provider requests a longer cooldown. Please retry later.", code=kind) from None
+                raise ServiceError("Provider requests a longer cooldown. Please retry later.", code=kind,
+                                   retry_after_seconds=delay) from None
             sleep(delay if delay is not None else 2 ** attempt + random.random())
