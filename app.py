@@ -23,6 +23,7 @@ if history_mode not in {"session", "local"}:
     st.error("JEE_HISTORY_MODE must be session or local.")
     st.stop()
 st.session_state.setdefault("request_history", [])
+st.session_state.setdefault("backend_request", {})
 st.title("Agentic JEE Assistant")
 st.caption("Analysis → solver with tools → independent verification → deterministic response")
 SAMPLES = {
@@ -70,11 +71,14 @@ with st.form("request"):
     question = st.text_area("Question or factual claim", key="question", height=180, max_chars=4000)
     submitted = st.form_submit_button("Run / retry", type="primary")
 
+if st.session_state.backend_request.get("job_id"):
+    st.info("Your previous request may still be running. Run / retry checks that same question instead of submitting it again.")
+
 if submitted:
     st.session_state.pop("result", None)
     try:
         with st.spinner("Working through the selected workflow. Provider pacing may take a few minutes…"):
-            result = (run_remote(question, mode, subject)
+            result = (run_remote(question, mode, subject, state=st.session_state.backend_request)
                       if os.getenv("JEE_API_URL", "").strip() else run(question, mode, subject))
         st.session_state.result = result.model_dump(mode="json")
         if store:

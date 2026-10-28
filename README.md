@@ -35,15 +35,26 @@ and `JEE_API_TOKEN` in Secrets. The token is sent only by the Streamlit server,
 never by browser JavaScript. Leave `JEE_API_URL` unset to preserve the local,
 in-process workflow. Never set it on Render: Render executes workflows directly.
 
-API routes are `GET /health`, authenticated `POST /api/v1/jobs`, and authenticated
-`GET /api/v1/jobs/{job_id}`. API documentation is available at `/docs`.
+API routes are `GET /health`, authenticated `POST /api/v1/jobs`, authenticated
+`GET /api/v1/jobs/{job_id}`, and authenticated `GET /api/v1/queue` for counts only.
+API documentation is available at `/docs`.
 The backend runs one worker with at most three active/queued jobs, returns 429
 when full, and retains up to 100 job records for 30 minutes after completion.
 Jobs are in memory and are lost on a Render restart or redeployment; do not run
 multiple API processes or instances with this in-memory implementation. The
 frontend never automatically resubmits an uncertain POST, avoiding duplicate
 expensive agent runs. It polls for up to 10 minutes and reports timeout/failure
-instead of showing an endless spinner. Existing Groq limits still apply.
+instead of showing an endless spinner. The frontend retains a request identifier
+and job ID in its browser session: retrying an unfinished question resumes the
+existing job. If the submission response was lost, the same Idempotency-Key lets
+the updated backend return that job instead of creating another one.
+
+Production workflows run in a disposable child process with a default 300-second
+execution deadline (`JEE_JOB_TIMEOUT_SECONDS`, configurable from 30 to 600).
+Timed-out processes are stopped before the queue slot is released, so a stuck
+worker cannot occupy it indefinitely. The existing pacing interval also applies
+between completed jobs. Existing Groq limits still apply. A full queue can still
+occur legitimately when three different requests are outstanding.
 
 ## Run on Windows
 

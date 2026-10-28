@@ -15,6 +15,7 @@ class ServiceError(RuntimeError):
 
 
 PUBLIC_FAILURES = {
+    "job_timeout": "This question exceeded the backend's execution time limit. Its worker was stopped; try a shorter or clearer question.",
     "authentication": "The model provider rejected the backend credentials. Check GROQ_API_KEY on Render.",
     "rate_limit": "The model provider's rate limit was reached. Wait before retrying.",
     "transient": "The model provider timed out or is temporarily unavailable. Please retry later.",

@@ -106,12 +106,27 @@ The live question consumes provider quota. A 429 is a provider limit, not proof
 that hosting is broken. Separate deployments or API keys in the same Groq
 organization do not establish separate organization-level quotas.
 
-The API also returns 429 when its bounded queue is full. The API runs one job at
-a time with room for three active/queued jobs total. Completed records expire
+The API returns a specific `queue_full` 429 with running/waiting counts when its
+bounded queue is full. It runs one job at a time with room for three accepted jobs
+total. This is different from a Groq provider rate limit. Completed records expire
 after 30 minutes; a restart clears all in-memory jobs. Run one backend process
 and instance. The frontend waits up to 10 minutes using short polling requests.
-It does not retry uncertain submissions automatically. HTTP requests originate
-from the Streamlit server, so browser CORS configuration is not required.
+It retains unfinished request IDs in the browser session, so Run / retry resumes
+the same question instead of submitting it again. An Idempotency-Key makes a
+retry after a lost submission response safe on the updated backend. It will not
+blindly retry an uncertain submission on an older backend without that support.
+
+Production workflows execute in separate child processes. After the default
+300-second job deadline, the child is terminated and its queue slot is released.
+Optional Render variable `JEE_JOB_TIMEOUT_SECONDS` accepts 30 to 600 seconds.
+The request pacing interval is preserved between jobs as well as within each
+workflow. For a genuinely full queue, wait rather than repeatedly changing and
+resubmitting questions. An authenticated `/api/v1/queue` route reports only
+running/waiting counts and does not expose question text or job IDs.
+
+HTTP requests originate from the Streamlit server, so browser CORS configuration
+is not required. Deploy/restart Render and reboot Streamlit together after this
+change. Redeployment clears the old in-memory queue; it discards unfinished work.
 
 If Groq reports `cache_breakpoint is unsupported`, deploy the latest compatibility
 fix described in [GROQ_COMPATIBILITY.md](GROQ_COMPATIBILITY.md). Changing API keys
