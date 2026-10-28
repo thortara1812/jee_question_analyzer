@@ -74,10 +74,10 @@ $env:OTEL_SDK_DISABLED = 'true'
 $env:CREWAI_STORAGE_DIR = '.local/crewai'
 $env:PYTHONUTF8 = '1'
 $env:LITELLM_LOCAL_MODEL_COST_MAP = 'true'
-.\.venv-validation\Scripts\python.exe -m unittest discover -s tests -v
-.\.venv-validation\Scripts\python.exe benchmarks/run_benchmark.py --output .local/benchmark.json
+.\.venv-validation\Scripts\python.exe -m unittest discover -s experiments/tests -v
+.\.venv-validation\Scripts\python.exe experiments/benchmarks/run_benchmark.py --output .local/benchmark.json
 $env:JEE_ATTEMPTS = '1'
-.\.venv-validation\Scripts\python.exe benchmarks/run_benchmark.py --live --case physics-block --output .local/physics-smoke.json
+.\.venv-validation\Scripts\python.exe experiments/benchmarks/run_benchmark.py --live --case physics-block --output .local/physics-smoke.json
 ```
 
 The last command consumes API quota. Use additional cases deliberately; do not

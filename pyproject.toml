@@ -20,7 +20,7 @@ packages = ["src/agentic_jee_system"]
 
 [tool.crewai]
 type = "flow"
-definition = "src/agentic_jee_system/flow.json"
+definition = "experiments/legacy/flow.json"
 project_id = "6c83f31a-efc4-4859-ae41-24a7bb93d675"
 
 [tool.uv]

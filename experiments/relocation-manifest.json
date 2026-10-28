@@ -1,0 +1,86 @@
+[
+  {
+    "original": "tests\\test_formatting.py",
+    "sha256": "6A4AAD492CD73CB4D8FA12264060B69B8B4CF2C0EB9EC2FCF7DD2D0E5BE3DA40"
+  },
+  {
+    "original": "tests\\test_system.py",
+    "sha256": "EBD34CED36FB61A6866EED98443ECE0C275C17D8E425EF8646FFD8B3D4FE874A"
+  },
+  {
+    "original": "tests\\test_ui.py",
+    "sha256": "ED08001C2F1519E519097D956F0C588A6BDB98AB208D451FDA6CAC6ACD716AA7"
+  },
+  {
+    "original": "tests\\__pycache__\\test_formatting.cpython-312.pyc",
+    "sha256": "9CA2E271619A3AFF63312233CD74502EFA7EBEE5CD742B9B395494DD99BB61A6"
+  },
+  {
+    "original": "tests\\__pycache__\\test_system.cpython-312.pyc",
+    "sha256": "83A7389D26E75F714A72EE3F261CB7677FAEF7497186C7BA1CB83A90E15A5D5A"
+  },
+  {
+    "original": "tests\\__pycache__\\test_ui.cpython-312.pyc",
+    "sha256": "255C4776795310666F1F9FF6D7060711ED2CB960BBB3F0C4EF04A9527E28BA8A"
+  },
+  {
+    "original": "benchmarks\\cases.json",
+    "sha256": "C8C80FAA2D535CC7082583ABD0562310B734B3CA056D5E935C7E1A3AA214B538"
+  },
+  {
+    "original": "benchmarks\\run_benchmark.py",
+    "sha256": "B2D8D6BEBCC11E1613222C8557E40BDD3EC1ABF7A4123F5736A616391C20DF3D"
+  },
+  {
+    "original": "benchmarks\\__pycache__\\run_benchmark.cpython-312.pyc",
+    "sha256": "1DB72931073AFAAA07159ADA76F1D36085540C0A55CF2183E67922F45F1DD7DF"
+  },
+  {
+    "original": "docs\\AUDIT.md",
+    "sha256": "74B821E9723FC7F065D4C670E978C593E1A2E75D0DE03747CC88744D17598D2C"
+  },
+  {
+    "original": "docs\\benchmark-live-smoke.json",
+    "sha256": "CD94DAF6473E8D4694B796446860457E0425B0CF78F083BF444CEF6018FA7645"
+  },
+  {
+    "original": "docs\\benchmark-offline.json",
+    "sha256": "7933F6B5B390DF2A667CA8BD739182C0E360CA8874CF9028613AD8D868C99E9A"
+  },
+  {
+    "original": "docs\\VALIDATION.md",
+    "sha256": "ABE019EBB02A6A771AC2F52C8C605A25E07C962085B58DE35A38E3C3BB2CE2FC"
+  },
+  {
+    "original": "output\\pdf\\JEE_System_Changes_and_Agentic_AI_Explanation.pdf",
+    "sha256": "3A8D2CE4793F7998654B8A3EFD3574CC04CABBB7B0BBEF5DA7C1BF81A5283D89"
+  },
+  {
+    "original": "output\\share\\Agentic_JEE_System_Team_Code.zip",
+    "sha256": "C4D114705508B8A6AA5FC710EF12A43DB19A478B6A0D5D384EF8AD1702C5DCC2"
+  },
+  {
+    "original": "README.md",
+    "sha256": "DF84DC984FF0C71691D184E63340D61F268F6AF1BFD12C92F973F74E2F81D114"
+  },
+  {
+    "original": "sitecustomize.py",
+    "sha256": "3E1359391872C6FBACB4D7260C756372C49C9BFF520ACE3BCCABAF789362D4D5"
+  },
+  {
+    "original": "src\\agentic_jee_system\\flow.json",
+    "sha256": "2EC110D1762E2A09F5BB5FA4F47A8F114F742F8B98A2CEA5CF1F6B6F415604E7"
+  },
+  {
+    "original": "AGENTS.md",
+    "sha256": "B9EE070570272235E00FE366B6E9EB0DA9309D0257E3D0DAB2841F4D809BE788"
+  },
+  {
+    "original": "CLAUDE.md",
+    "sha256": "EAAC258C47FB39063ACDFD016EEC1064DBA67C2EFB202368EC2FE340DC5ED5D3"
+  },
+  {
+    "original": "GEMINI.md",
+    "sha256": "F7B1E037F74F8ADF590041EC221B6D57F7C51A1C647DBCD0B514FFD3BC7F661F"
+  }
+]

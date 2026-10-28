@@ -4,6 +4,7 @@
 __pycache__/
 .crewai/
 output/
+experiments/artifacts/
 .local/
 .pytest_cache/
 *.pyc

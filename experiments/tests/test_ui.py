@@ -7,7 +7,7 @@ from streamlit.testing.v1 import AppTest
 
 from agentic_jee_system.schemas import Result
 
-APP = str(Path(__file__).resolve().parents[1] / "app.py")
+APP = str(Path(__file__).resolve().parents[2] / "app.py")
 
 
 class UITests(unittest.TestCase):
