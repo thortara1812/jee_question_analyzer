@@ -138,6 +138,12 @@ the local validation-environment executable. Routine tests mock external APIs;
 benchmark execution uses deterministic calculations unless `--live` is supplied.
 # Image questions and Render frontend
 
+## Current solving flow: readable-flow-v2
+
+Question solving now uses ordinary Markdown responses from the analyzer, solver and independent reviewer. No JSON response schema or submission tool is required for solving. Both typed and image-extracted questions use this path. The solver and reviewer can use the bounded calculator. Results have status `completed`, with a separate review; this does not imply machine-validated correctness. The previous structured solving implementation remains for regression comparisons with injected test backends, and fact checking retains its evidence/citation contracts.
+
+Deploy the latest backend and reboot/redeploy the frontend. Confirm `App build: readable-flow-v2` on the page. The change removes format-validation failures from the normal solving path; provider quotas, empty responses, unavailable models and network failures can still prevent completion. Current validation: 70 automated tests pass; live screenshot transcription and the screenshot's inclined-plane question were tested, producing coefficient 3/4, option (c).
+
 For incomplete or ambiguous JEE questions, the analyzer selects explicit assumptions and passes them to the solver and verifier. The answer appears first, followed by **Assumptions used**. Conventional defaults are preferred; values without a standard default are labeled illustrative and accompanied by a symbolic result. Verification is conditional on those assumptions. Inputs without an identifiable subject and invalid calculations still require review. Fact checking continues to require evidence rather than assumed facts.
 
 Upload a JPG, PNG or WebP (under 3 MB), extract the question, review the text and diagram labels, then press **Run / retry**. Groq vision reads the image before the existing analyzer, solver and verifier execute. Set `JEE_VISION_MODEL` on the backend; the current default is `qwen/qwen3.8-27b`. Images are processed in memory and not saved by the app.

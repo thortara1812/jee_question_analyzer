@@ -26,7 +26,7 @@ st.session_state.setdefault("request_history", [])
 st.session_state.setdefault("backend_request", {})
 st.title("Agentic JEE Assistant")
 st.caption("Analysis → solver with tools → independent verification → deterministic response")
-st.caption("App build: image-input-v1")
+st.caption("App build: readable-flow-v2")
 SAMPLES = {
     "Mathematics": "Solve 2x + 5 = 15.",
     "Physics": "A 2 kg block starts from rest under an 8 N horizontal force on a frictionless surface for 5 seconds. Find its final kinetic energy.",

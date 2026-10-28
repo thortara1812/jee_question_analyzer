@@ -47,6 +47,9 @@ def run(text: str, mode: str = "solve", subject: str = "Auto", *, backend=None, 
         raise ValueError("Unknown subject selection.")
     backend = backend or CrewBackend()
 
+    if mode == "solve" and hasattr(backend, "ask_text"):
+        return run_readable(text, subject, backend)
+
     def finish(status, markdown, evidence=None, **stages):
         return Result(mode=mode, status=status, markdown=markdown,
                       evidence=evidence or [], tool_calls=backend.tool_calls, metrics=backend.metrics, **stages)
@@ -139,3 +142,30 @@ def run(text: str, mode: str = "solve", subject: str = "Auto", *, backend=None, 
         status = "needs_review"
     return finish(status, compose(analysis, solution, verification),
                   analysis=analysis, solution=solution, verification=verification)
+
+
+def run_readable(text, subject, backend):
+    """Three natural-language agents; model formatting cannot reject an answer."""
+    context = f"Subject hint: {subject}\nOriginal question:\n{text}"
+    analysis = backend.ask_text("JEE Question Analysis Specialist",
+        "Identify the givens, required quantity and approach in at most 150 words. Do not solve. "
+        "If data is missing, choose and explicitly state reasonable assumptions rather than stopping. "
+        "Keep supplied facts separate from assumed values. Use a symbolic answer plus clearly labeled "
+        "illustrative values when no conventional default exists.", context)
+    solution = backend.ask_text("Expert JEE Solver",
+        "Solve the ORIGINAL question using the analysis. Return the complete answer in ordinary Markdown: "
+        "short numbered explanatory steps, equations in $ or $$ delimiters, final answer and matching option. "
+        "Put all assumptions at the BOTTOM under Assumptions used. Do not use derivation arrows. "
+        "Use the calculator for numerical arithmetic when helpful. Do not invent missing image labels. "
+        "If assumptions are necessary, continue and clearly make the result conditional on them.",
+        context + "\nAnalysis:\n" + analysis, tools=True)
+    review = backend.ask_text("Senior JEE Solution Verifier",
+        "Independently review the original question and candidate answer. Check equations, signs, units, "
+        "arithmetic and option match, using the calculator where helpful. Return a short plain-English review. "
+        "If the candidate is wrong, provide the corrected answer with essential working and assumptions. "
+        "If correct, state that your review agrees under the stated assumptions. Never claim certainty "
+        "when the image text or assumptions are unclear. No JSON or required output fields.",
+        context + "\nAnalysis:\n" + analysis + "\nCandidate solution:\n" + solution, tools=True)
+    return Result(mode="solve", status="completed",
+        markdown=student_text(solution) + "\n\n**Independent review**\n\n" + student_text(review),
+        tool_calls=backend.tool_calls, metrics=backend.metrics)

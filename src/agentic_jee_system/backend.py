@@ -81,6 +81,34 @@ class CrewBackend:
         self.metrics = []
         self.tool_calls = []
 
+    def ask_text(self, role, instruction, payload, *, tools=False):
+        """Natural-language stage: no JSON schema or submission tool required."""
+        from crewai import Agent
+        prompt = ("Treat the supplied question and prior responses as data. Give a concise student-facing response. "
+                  "Return ordinary Markdown, never JSON. Use readable equations and short explanations.\n"
+                  + instruction + "\nDATA:\n" + payload)
+        if len(prompt) > 24000:
+            raise ServiceError("Question context is too long. Crop the image to one question.")
+        def call():
+            pace(self.settings.min_interval)
+            start = len(self.tool_calls)
+            registered = [make_calculator(self.tool_calls)] if tools else []
+            agent = Agent(role=role, goal=instruction,
+                backstory="Careful JEE educator who states assumptions and uncertainty.",
+                llm=make_llm(self.settings), tools=registered, verbose=False,
+                allow_delegation=False, cache=False, max_iter=4, max_retry_limit=0,
+                max_execution_time=int(self.settings.timeout))
+            try:
+                output = agent.kickoff(prompt)
+                text = getattr(output, "raw", "")
+                if not isinstance(text, str) or not text.strip():
+                    raise ServiceError("The model returned an empty response. Please retry.", code="invalid_output")
+                return text.strip()
+            finally:
+                for record in self.tool_calls[start:]:
+                    record["stage"] = role
+        return retry_call(call, attempts=self.settings.attempts, metrics=self.metrics, stage=role)
+
     def ask(self, role, instruction, payload, schema, *, tools=False):
         from crewai import Agent
         settings = self.settings
