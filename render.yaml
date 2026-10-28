@@ -4,8 +4,8 @@ services:
     runtime: python
     plan: free
     buildCommand: uv sync --locked --no-dev
-    startCommand: .venv/bin/python -m streamlit run app.py --server.address 0.0.0.0 --server.port $PORT
-    healthCheckPath: /_stcore/health
+    startCommand: .venv/bin/python api_server.py
+    healthCheckPath: /health
     autoDeployTrigger: commit
     envVars:
       - key: PYTHON_VERSION
@@ -13,6 +13,8 @@ services:
       - key: UV_VERSION
         value: "0.12.16"
       - key: GROQ_API_KEY
+        sync: false
+      - key: JEE_API_TOKEN
         sync: false
       - key: JEE_MODEL
         value: groq/openai/gpt-oss-120b

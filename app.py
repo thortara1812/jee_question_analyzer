@@ -8,6 +8,7 @@ from agentic_jee_system.reliability import ServiceError
 from agentic_jee_system.workflow import compose, run
 from agentic_jee_system.schemas import Result
 from agentic_jee_system.presentation import student_text
+from agentic_jee_system.api_client import run_remote
 
 st.set_page_config(page_title="Agentic JEE Assistant", page_icon="🎓", layout="wide")
 # Reading the secrets store promotes root-level Cloud secrets to environment
@@ -51,7 +52,7 @@ with st.sidebar:
     subject = st.selectbox("Subject", ["Auto", *SAMPLES])
     store = st.checkbox("Save requests on this computer" if history_mode == "local" else "Keep history in this session", value=False,
                         help="Local mode uses SQLite; session mode is private to this browser session and resets on disconnect.")
-    st.caption("External search requires TAVILY_API_KEY. Credentials are read from secure server configuration.")
+    st.caption("Fact checking uses external evidence when search is configured.")
     if st.button("Clear local history" if history_mode == "local" else "Clear session history"):
         try:
             if history_mode == "local":
@@ -73,7 +74,8 @@ if submitted:
     st.session_state.pop("result", None)
     try:
         with st.spinner("Working through the selected workflow. Provider pacing may take a few minutes…"):
-            result = run(question, mode, subject)
+            result = (run_remote(question, mode, subject)
+                      if os.getenv("JEE_API_URL", "").strip() else run(question, mode, subject))
         st.session_state.result = result.model_dump(mode="json")
         if store:
             try:

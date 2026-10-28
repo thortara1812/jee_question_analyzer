@@ -11,6 +11,16 @@ APP = str(Path(__file__).resolve().parents[2] / "app.py")
 
 
 class UITests(unittest.TestCase):
+    def test_configured_frontend_calls_api_instead_of_local_agents(self):
+        result = Result(mode="solve", status="verified", markdown="Remote answer")
+        with patch.dict("os.environ", {"JEE_API_URL": "https://backend.example"}), patch("agentic_jee_system.api_client.run_remote", return_value=result) as remote, patch("agentic_jee_system.workflow.run") as local:
+            app = AppTest.from_file(APP, default_timeout=30).run()
+            app.text_area[0].set_value("Solve a question").run()
+            next(button for button in app.button if button.label == "Run / retry").click().run()
+            self.assertEqual(len(app.exception), 0)
+            remote.assert_called_once()
+            local.assert_not_called()
+
     def test_cloud_history_does_not_read_shared_sqlite(self):
         with patch.dict("os.environ", {"JEE_HISTORY_MODE": "session"}), patch("agentic_jee_system.history.recent") as shared:
             app = AppTest.from_file(APP, default_timeout=30).run()

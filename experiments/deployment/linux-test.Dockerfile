@@ -9,7 +9,7 @@ RUN pip install --no-cache-dir uv==0.12.16
 COPY pyproject.toml uv.lock ./
 COPY src ./src
 RUN uv sync --locked --no-dev
-COPY app.py run_flow.py ./
+COPY app.py run_flow.py api_server.py ./
 COPY .streamlit/config.toml ./.streamlit/config.toml
 COPY experiments/tests ./experiments/tests
 CMD [".venv/bin/python", "-m", "unittest", "discover", "-s", "experiments/tests", "-v"]
