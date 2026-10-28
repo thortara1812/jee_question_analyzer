@@ -2,6 +2,7 @@
 from concurrent.futures import ThreadPoolExecutor
 from threading import BoundedSemaphore, Event, Lock
 import hashlib
+import logging
 import multiprocessing
 import time
 from uuid import uuid4
@@ -9,6 +10,8 @@ from uuid import uuid4
 from .api_contracts import JobRequest, JobSnapshot
 from .reliability import PUBLIC_FAILURES, ServiceError
 from .schemas import Result
+
+logger = logging.getLogger("agentic_jee_system.jobs")
 
 
 class QueueFull(Exception):
@@ -26,6 +29,9 @@ def _isolated_work(runner, payload, sender):
         sender.send({"result": result.model_dump(mode="json")})
     except Exception as exc:
         code = exc.code if isinstance(exc, ServiceError) and exc.code in PUBLIC_FAILURES else "workflow_failed"
+        # Render needs enough information to diagnose runtime failures, but provider
+        # messages and question text may contain sensitive data and are never logged.
+        logger.error("isolated job failed: code=%s exception_type=%s", code, type(exc).__name__)
         sender.send({"error_code": code})
     finally:
         sender.close()
@@ -107,6 +113,7 @@ class JobManager:
         except Exception as exc:
             # Never return provider exceptions, tracebacks or request data.
             code = exc.code if isinstance(exc, ServiceError) and exc.code in PUBLIC_FAILURES else "workflow_failed"
+            logger.error("job failed: job_id=%s code=%s exception_type=%s", job_id, code, type(exc).__name__)
             with self.lock:
                 self.jobs[job_id].error = PUBLIC_FAILURES[code]
                 self.jobs[job_id].error_code = code
@@ -132,6 +139,7 @@ class JobManager:
             try:
                 payload = receiver.recv()
             except EOFError:
+                logger.error("isolated worker exited without a result: exit_code=%s", process.exitcode)
                 raise ServiceError("Backend worker stopped before producing a result.") from None
             if "error_code" in payload:
                 code = payload["error_code"]
