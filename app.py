@@ -92,8 +92,9 @@ if submitted:
                 st.warning("Result is available, but history could not be saved.")
     except (ValueError, ServiceError) as exc:
         st.error(str(exc))
-    except Exception:
+    except Exception as exc:
         st.error("The workflow could not complete. Check your installation and provider configuration, then retry.")
+        st.caption(f"Safe diagnostic: frontend_{type(exc).__name__}")
 
 if st.session_state.get("result"):
     result = st.session_state.result
