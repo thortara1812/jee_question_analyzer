@@ -95,9 +95,19 @@ class WorkflowTests(unittest.TestCase):
         self.assertIn("400 J", result.markdown)
         self.assertEqual(len(backend.calls), 3)
 
-    def test_ambiguity_stops_before_solver(self):
-        backend = FakeBackend([analysis(ambiguities=["Mass unknown"] )])
+    def test_ambiguity_continues_with_visible_assumptions_below_answer(self):
+        backend = FakeBackend([analysis(ambiguities=["Mass unknown"],
+            assumptions=["Illustrative mass = 2 kg; original mass was not supplied."]), solution(), verification()])
         result = run("Find kinetic energy", backend=backend)
+        self.assertEqual(result.status, "verified")
+        self.assertEqual(len(backend.calls), 3)
+        self.assertIn("verified under stated assumptions", result.markdown)
+        self.assertIn("Illustrative mass = 2 kg", result.markdown)
+        self.assertGreater(result.markdown.index("**Assumptions used**"), result.markdown.index("**Final answer:**"))
+
+    def test_unknown_subject_still_requires_a_question(self):
+        backend = FakeBackend([analysis(subject="Unknown", ambiguities=["No question found"])])
+        result = run("hello there", backend=backend)
         self.assertEqual(result.status, "needs_review")
         self.assertEqual(len(backend.calls), 1)
 

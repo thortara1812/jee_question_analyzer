@@ -19,16 +19,23 @@ def compose(analysis: Analysis, solution: Solution, verification: Verification) 
     """Formatting cannot upgrade a rejected answer into a verified answer."""
     intro = f"**{analysis.subject} · {analysis.topic}**\n\n"
     checks = "\n".join(f"- {student_text(check)}" for check in verification.checks)
+    notes = list(analysis.assumptions)
+    if analysis.ambiguities:
+        notes = ["This answer is conditional on the assumptions below; the original question is incomplete or ambiguous."] + notes
+        notes += ["Original uncertainty: " + item for item in analysis.ambiguities]
+    assumptions_text = ("\n\n**Assumptions used**\n\n" + "\n".join(
+        f"- {student_text(item)}" for item in notes)) if notes else ""
     if verification.verdict != "verified" or verification.errors or solution.limitations:
         issues = verification.errors + solution.limitations
         return (intro + "**Verification: needs review — no confirmed answer.**\n\n"
-                + "\n".join(f"- {item}" for item in issues) + "\n\n" + verification.correction)
+                + "\n".join(f"- {item}" for item in issues) + "\n\n" + verification.correction + assumptions_text)
     steps = "\n\n".join(f"**Step {i}**\n\n{student_text(step)}" for i, step in enumerate(solution.steps, 1))
     option = solution.option or ("No provided option matches." if analysis.options else "Not applicable")
     option_text = f"\n\n**Option:** {option}" if analysis.options else ""
     return (intro + f"**Equation to use**\n\n{formula_block(solution.formula)}\n\n{steps}\n\n"
             + f"**Final answer:** {student_text(solution.answer)}{option_text}\n\n"
-            + f"**Verification: verified**\n\n{checks}")
+            + f"**Verification: {'verified under stated assumptions' if analysis.ambiguities else 'verified'}**\n\n{checks}"
+            + assumptions_text)
 
 
 def run(text: str, mode: str = "solve", subject: str = "Auto", *, backend=None, search=None) -> Result:
@@ -70,13 +77,24 @@ def run(text: str, mode: str = "solve", subject: str = "Auto", *, backend=None, 
     analysis = backend.ask("JEE Question Analysis Specialist",
         "Extract subject, topic, given values with units, unknowns, assumptions, options and a concise approach. "
         "Set calculation_required when numerical computation is needed. Do not solve. "
-        "Flag ambiguity, missing essential data and contradictions; never invent facts.",
+        "Flag ambiguity, missing essential data and contradictions. Continue by choosing reasonable JEE defaults and "
+        "record EVERY assumed value or statement explicitly in assumptions, with units and a brief reason. "
+        "Never put assumed values in given or present them as supplied facts. Preserve all explicit givens. "
+        "Use conventional defaults where appropriate (g=9.8 m/s^2, ideal components, negligible air resistance). "
+        "For missing mass, speed or other quantities without a standard default, choose a simple physically valid "
+        "illustrative value, clearly label it illustrative, and plan a general symbolic answer as well. "
+        "For ambiguous interpretations, select and document one interpretation. Do not request clarification "
+        "instead of solving. Use Unknown only when the input contains no identifiable Math, Physics or Chemistry problem.",
         {"question": text, "subject_hint": subject}, Analysis)
-    if analysis.ambiguities or analysis.subject == "Unknown":
+    if analysis.subject == "Unknown":
         return finish("needs_review", "**Clarification needed.**\n\n" + "\n".join(
             analysis.ambiguities or ["Please provide a clear JEE question."]))
     payload = {"question": text, "analysis": analysis.model_dump()}
     solve_instruction = (
+        "Proceed using the analysis assumptions despite missing data or ambiguity. Use exactly those assumed "
+        "values and interpretations; do not introduce unrecorded defaults. State the general symbolic result "
+        "as well when an illustrative numeric value was assumed. An explicitly resolved ambiguity is not a "
+        "limitation requiring clarification. Keep genuine calculation errors or unresolved contradictions as limitations. "
         "Solve using the appropriate method and concise derivation. Use bounded_calculator for numerical substitutions. "
         "Check units and compare all MCQ options; use null if none match. Mark missing facts as limitations. "
         "Write for a student: explain each operation in a short plain-English sentence, then show its equation on a separate line. "
@@ -86,6 +104,9 @@ def run(text: str, mode: str = "solve", subject: str = "Auto", *, backend=None, 
         "Never use arrows, Rightarrow, therefore symbols or semicolon-separated derivation chains. "
         "Always enclose LaTeX in $...$ inline or $$...$$ on separate lines. Do not assign a verification verdict.")
     verify_instruction = (
+        "Verify the candidate conditionally under the exact assumptions in the analysis. Missing original values "
+        "are acceptable when explicitly assumed; do not reject solely because the original question was incomplete. "
+        "Reject assumptions that contradict explicit givens, hidden assumptions, or invalid mathematics. "
         "Independently check the original problem and candidate: equations, assumptions, signs, units, boundaries and MCQ match. "
         "Recalculate numerical results with bounded_calculator, preferably another path. Reject errors with specific correction instructions. "
         "Do not mark unsupported answers verified. A correct calculation with no matching option is allowed; a wrong selected option is not.")
