@@ -2,6 +2,8 @@
 from contextlib import asynccontextmanager
 import hmac
 import os
+from threading import BoundedSemaphore
+from starlette.concurrency import run_in_threadpool
 from uuid import UUID
 
 from dotenv import load_dotenv
@@ -11,6 +13,8 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from .api_contracts import JobRequest, JobSnapshot
 from .api_jobs import JobManager, QueueFull, RequestConflict
 from .workflow import run
+from .vision import ImageRequest, transcribe_image
+from .reliability import ServiceError
 
 bearer = HTTPBearer(auto_error=False)
 
@@ -25,6 +29,7 @@ def authorize(credentials: HTTPAuthorizationCredentials | None = Depends(bearer)
 
 
 def create_app(runner=run) -> FastAPI:
+    image_slot = BoundedSemaphore(1)
     @asynccontextmanager
     async def lifespan(application):
         load_dotenv()
@@ -43,8 +48,29 @@ def create_app(runner=run) -> FastAPI:
     def health():
         token = os.getenv("JEE_API_TOKEN", "").strip()
         return {"status": "ok", "service": "agentic-jee-api", "api_version": "1",
-                "idempotency_supported": True,
+                "idempotency_supported": True, "image_upload_supported": True,
                 "configured": bool(token and token != "replace_with_a_long_random_shared_token")}
+
+    @application.post("/api/v1/transcribe", dependencies=[Depends(authorize)])
+    async def transcribe(request: Request):
+        if not image_slot.acquire(blocking=False):
+            raise HTTPException(429, "Image transcription is busy. Retry later.")
+        try:
+            data = bytearray()
+            async for chunk in request.stream():
+                data.extend(chunk)
+                if len(data) > 4_200_000:
+                    raise HTTPException(413, "Image request is too large.")
+            try:
+                payload = ImageRequest.model_validate_json(bytes(data))
+                text = await run_in_threadpool(transcribe_image, payload.image_base64)
+                return {"text": text}
+            except ValueError:
+                raise HTTPException(422, "Invalid image. Upload a JPG, PNG or WebP smaller than 3 MB.") from None
+            except ServiceError as exc:
+                raise HTTPException(502, {"code": exc.code}) from None
+        finally:
+            image_slot.release()
 
     @application.post("/api/v1/jobs", response_model=JobSnapshot, status_code=202, dependencies=[Depends(authorize)])
     def submit(payload: JobRequest, request: Request, idempotency_key: UUID | None = Header(default=None)):

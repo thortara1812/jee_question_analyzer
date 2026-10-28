@@ -8,7 +8,7 @@ from agentic_jee_system.reliability import ServiceError
 from agentic_jee_system.workflow import compose, run
 from agentic_jee_system.schemas import Result
 from agentic_jee_system.presentation import student_text
-from agentic_jee_system.api_client import run_remote
+from agentic_jee_system.api_client import run_remote, transcribe_remote
 
 st.set_page_config(page_title="Agentic JEE Assistant", page_icon="🎓", layout="wide")
 # Reading the secrets store promotes root-level Cloud secrets to environment
@@ -26,6 +26,7 @@ st.session_state.setdefault("request_history", [])
 st.session_state.setdefault("backend_request", {})
 st.title("Agentic JEE Assistant")
 st.caption("Analysis → solver with tools → independent verification → deterministic response")
+st.caption("App build: image-input-v1")
 SAMPLES = {
     "Mathematics": "Solve 2x + 5 = 15.",
     "Physics": "A 2 kg block starts from rest under an 8 N horizontal force on a frictionless surface for 5 seconds. Find its final kinetic energy.",
@@ -67,6 +68,28 @@ with st.sidebar:
 for column, name in zip(st.columns(3), SAMPLES):
     column.button(f"{name} example", on_click=use_sample, args=(name,), use_container_width=True)
 
+with st.expander("Upload a question image", expanded=False):
+    uploaded = st.file_uploader("JPG, PNG or WebP — maximum 3 MB", type=["jpg", "jpeg", "png", "webp"])
+    st.caption("The image is sent to Groq to read the question. Review equations, units and diagram labels before solving.")
+    if uploaded is not None:
+        if uploaded.size > 3 * 1024 * 1024:
+            st.error("Please upload an image smaller than 3 MB.")
+        else:
+            st.image(uploaded, width=500)
+            if st.button("Extract question from image"):
+                try:
+                    with st.spinner("Reading the question image…"):
+                        if os.getenv("JEE_API_URL", "").strip():
+                            extracted = transcribe_remote(uploaded.getvalue())
+                        else:
+                            from agentic_jee_system.vision import normalize_image, transcribe_image
+                            extracted = transcribe_image(normalize_image(uploaded.getvalue()))
+                    st.session_state.question = extracted
+                    st.session_state.pop("result", None)
+                    st.success("Question extracted. Review the text below, then press Run / retry.")
+                except (ValueError, ServiceError) as exc:
+                    st.error(str(exc))
+
 with st.form("request"):
     question = st.text_area("Question or factual claim", key="question", height=180, max_chars=4000)
     submitted = st.form_submit_button("Run / retry", type="primary")
@@ -93,7 +116,7 @@ if submitted:
     except (ValueError, ServiceError) as exc:
         st.error(str(exc))
     except Exception as exc:
-        st.error("The workflow could not complete. Check your installation and provider configuration, then retry.")
+        st.error("An unexpected application error interrupted the request. Share the diagnostic code below with the project maintainer.")
         st.caption(f"Safe diagnostic: frontend_{type(exc).__name__}")
 
 if st.session_state.get("result"):

@@ -13,6 +13,29 @@ from .reliability import PUBLIC_FAILURES, ServiceError
 from .schemas import Result
 
 
+def transcribe_remote(data: bytes) -> str:
+    from .vision import normalize_image
+    encoded = normalize_image(data)
+    url, token = backend_settings()
+    try:
+        with httpx.Client(timeout=120) as client:
+            response = client.post(url + "/api/v1/transcribe",
+                headers={"Authorization": "Bearer " + token}, json={"image_base64": encoded})
+            if response.status_code == 404:
+                raise ServiceError("Deploy the latest Render backend to enable image upload.")
+            if response.status_code == 502:
+                detail = response.json().get("detail", {})
+                code = detail.get("code") if isinstance(detail, dict) else None
+                raise ServiceError(PUBLIC_FAILURES.get(code, PUBLIC_FAILURES["workflow_failed"]))
+            result = _response(response)
+            text = result.get("text")
+            if not isinstance(text, str) or not 3 <= len(text) <= 4000:
+                raise ServiceError("The backend returned an invalid image transcription.")
+            return text
+    except httpx.RequestError:
+        raise ServiceError("Image extraction could not connect to the backend. Retry when Render is live.") from None
+
+
 def backend_settings():
     url = os.getenv("JEE_API_URL", "").strip().rstrip("/")
     token = os.getenv("JEE_API_TOKEN", "").strip()

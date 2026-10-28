@@ -18,6 +18,8 @@ services:
         sync: false
       - key: JEE_MODEL
         value: groq/openai/gpt-oss-120b
+      - key: JEE_VISION_MODEL
+        value: qwen/qwen3.8-27b
       - key: JEE_HISTORY_MODE
         value: session
       - key: JEE_MAX_TOKENS
@@ -38,3 +40,21 @@ services:
         value: "true"
       - key: LITELLM_LOCAL_MODEL_COST_MAP
         value: "true"
+  - type: web
+    name: agentic-jee-frontend
+    runtime: python
+    plan: free
+    buildCommand: uv sync --locked --no-dev
+    startCommand: .venv/bin/python frontend_server.py
+    healthCheckPath: /_stcore/health
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.12.14"
+      - key: UV_VERSION
+        value: "0.12.16"
+      - key: JEE_API_URL
+        value: https://jee-question-analyzer.onrender.com
+      - key: JEE_API_TOKEN
+        sync: false
+      - key: JEE_HISTORY_MODE
+        value: session
