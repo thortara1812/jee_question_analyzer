@@ -8,6 +8,8 @@ from fastapi.testclient import TestClient
 from agentic_jee_system.api import create_app
 from agentic_jee_system.vision import normalize_image, transcribe_image
 from agentic_jee_system.reliability import ServiceError
+from agentic_jee_system.api_client import transcribe_remote
+import httpx
 
 def sample_image():
     output = io.BytesIO()
@@ -15,6 +17,28 @@ def sample_image():
     return output.getvalue()
 
 class VisionTests(unittest.TestCase):
+    def test_remote_gateway_and_malformed_responses_never_leak_decoder_errors(self):
+        responses = [httpx.Response(502, text=""), httpx.Response(502, text="<html>Bad Gateway</html>"),
+            httpx.Response(502, json=[]), httpx.Response(502, json={"detail": {"code": []}}),
+            httpx.Response(200, text="", headers={"content-type": "application/json"}),
+            httpx.Response(200, json=[]), httpx.Response(200, json={"text": None})]
+        for response in responses:
+            with self.subTest(response=response.status_code), patch.dict("os.environ", {
+                "JEE_API_URL": "https://backend.example", "JEE_API_TOKEN": "test-token"}), patch("httpx.Client") as factory:
+                factory.return_value.__enter__.return_value.post.return_value = response
+                with self.assertRaises(ServiceError) as ctx:
+                    transcribe_remote(sample_image())
+                self.assertNotIn("Expecting value", str(ctx.exception))
+                self.assertNotIn("<html>", str(ctx.exception))
+
+    def test_provider_empty_response_is_safe(self):
+        client = Mock()
+        client.post.return_value = httpx.Response(200, content=b"")
+        with patch.dict("os.environ", {"GROQ_API_KEY": "test-key"}):
+            with self.assertRaises(ServiceError) as ctx:
+                transcribe_image(normalize_image(sample_image()), client=client)
+            self.assertEqual(ctx.exception.code, "invalid_output")
+
     def test_image_reencoding_and_validation(self):
         encoded = normalize_image(sample_image())
         with Image.open(io.BytesIO(base64.b64decode(encoded))) as image:

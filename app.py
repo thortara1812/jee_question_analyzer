@@ -26,7 +26,7 @@ st.session_state.setdefault("request_history", [])
 st.session_state.setdefault("backend_request", {})
 st.title("Agentic JEE Assistant")
 st.caption("Analysis → solver with tools → independent verification → deterministic response")
-st.caption("App build: readable-flow-v2")
+st.caption("App build: image-recovery-v3")
 SAMPLES = {
     "Mathematics": "Solve 2x + 5 = 15.",
     "Physics": "A 2 kg block starts from rest under an 8 N horizontal force on a frictionless surface for 5 seconds. Find its final kinetic energy.",
@@ -89,6 +89,10 @@ with st.expander("Upload a question image", expanded=False):
                     st.success("Question extracted. Review the text below, then press Run / retry.")
                 except (ValueError, ServiceError) as exc:
                     st.error(str(exc))
+                    st.info("Your question text is preserved. You can retry extraction or type the question below and press Run / retry.")
+                except Exception as exc:
+                    st.error("Image extraction was interrupted. Retry when the backend is live, or type the question below.")
+                    st.caption(f"Safe diagnostic: image_{type(exc).__name__}")
 
 with st.form("request"):
     question = st.text_area("Question or factual claim", key="question", height=180, max_chars=4000)

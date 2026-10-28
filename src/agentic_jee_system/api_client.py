@@ -25,14 +25,22 @@ def transcribe_remote(data: bytes) -> str:
             if response.status_code == 404:
                 raise ServiceError("Deploy the latest Render backend to enable image upload.")
             if response.status_code == 502:
-                detail = response.json().get("detail", {})
+                try:
+                    payload = response.json()
+                    detail = payload.get("detail", {}) if isinstance(payload, dict) else {}
+                except ValueError:
+                    detail = {}
                 code = detail.get("code") if isinstance(detail, dict) else None
-                raise ServiceError(PUBLIC_FAILURES.get(code, PUBLIC_FAILURES["workflow_failed"]))
+                message = PUBLIC_FAILURES.get(code) if isinstance(code, str) else None
+                raise ServiceError(message or "Image extraction is temporarily unavailable. Render or the image provider did not return a valid response. Retry after the backend is live, or type the question below.",
+                                   code=code if isinstance(code, str) and code in PUBLIC_FAILURES else "transient")
             result = _response(response)
             text = result.get("text")
             if not isinstance(text, str) or not 3 <= len(text) <= 4000:
                 raise ServiceError("The backend returned an invalid image transcription.")
             return text
+    except (ValueError, AttributeError, TypeError):
+        raise ServiceError("The image service returned an unreadable response. Retry later or type the question below.", code="invalid_output") from None
     except httpx.RequestError:
         raise ServiceError("Image extraction could not connect to the backend. Retry when Render is live.") from None
 
@@ -70,7 +78,10 @@ def _response(response: httpx.Response):
     if "application/json" not in response.headers.get("content-type", ""):
         raise ServiceError("The Render URL is serving a webpage instead of the backend API. Change its start command to api_server.py.")
     try:
-        return response.json()
+        payload = response.json()
+        if not isinstance(payload, dict):
+            raise ValueError
+        return payload
     except ValueError:
         raise ServiceError("The backend returned an invalid response.") from None
 
