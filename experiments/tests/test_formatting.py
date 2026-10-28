@@ -4,6 +4,17 @@ from agentic_jee_system.presentation import formula_block, student_text
 
 
 class StudentFormattingTests(unittest.TestCase):
+    def test_spaced_arrow_chain_has_no_dangling_backslashes(self):
+        value = student_text(r"$$t=\sqrt{2s/a}\;\Rightarrow\; a_s=4a_r$$")
+        self.assertEqual(value, "$$\nt=\\sqrt{2s/a}\n$$\n\n$$\na_s=4a_r\n$$")
+        self.assertNotIn("\\$$", value)
+        self.assertEqual(student_text(value), value)
+
+    def test_spacing_between_display_blocks_cannot_make_triple_dollars(self):
+        value = student_text(r"$$x=1$$\;\quad$$y=2$$")
+        self.assertNotIn("$$$", value)
+        self.assertNotIn(r"\quad", value)
+        self.assertEqual(student_text(value), value)
     def test_formula_does_not_repeat_arrow_derivation(self):
         self.assertEqual(formula_block(r"2x + 5 = 15 ;\Rightarrow; 2x = 10 ;\Rightarrow; x = \frac{10}{2} = 5"),
                          "$$\n2x + 5 = 15\n$$")

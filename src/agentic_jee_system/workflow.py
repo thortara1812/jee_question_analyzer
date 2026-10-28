@@ -155,6 +155,8 @@ def run_readable(text, subject, backend):
     solution = backend.ask_text("Expert JEE Solver",
         "Solve the ORIGINAL question using the analysis. Return the complete answer in ordinary Markdown: "
         "short numbered explanatory steps, equations in $ or $$ delimiters, final answer and matching option. "
+        "Put each display equation in its own $$ block with delimiters on separate lines. "
+        "Never chain equations with arrows or TeX spacing commands such as backslash-semicolon or quad. "
         "Put all assumptions at the BOTTOM under Assumptions used. Do not use derivation arrows. "
         "Use the calculator for numerical arithmetic when helpful. Do not invent missing image labels. "
         "If assumptions are necessary, continue and clearly make the result conditional on them.",
