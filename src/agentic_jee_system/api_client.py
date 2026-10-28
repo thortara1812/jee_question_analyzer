@@ -7,7 +7,7 @@ import httpx
 from pydantic import ValidationError
 
 from .api_contracts import JobRequest, JobSnapshot
-from .reliability import ServiceError
+from .reliability import PUBLIC_FAILURES, ServiceError
 from .schemas import Result
 
 
@@ -61,8 +61,9 @@ def run_remote(question: str, mode="solve", subject="Auto", *, client=None, slee
                     raise ServiceError("The backend completed without a valid result.")
                 return snapshot.result
             if snapshot.status == "failed":
-                # Do not render arbitrary server messages in the frontend.
-                raise ServiceError("The backend workflow failed. Check provider configuration or retry later.")
+                # Only show locally allowlisted messages, never arbitrary server errors.
+                message = PUBLIC_FAILURES.get(snapshot.error_code, PUBLIC_FAILURES["workflow_failed"])
+                raise ServiceError(message, code=snapshot.error_code or "workflow_failed")
             if clock() >= deadline:
                 raise ServiceError("The backend is still processing. A job may remain active; avoid immediately submitting it again.")
             sleep(poll_seconds)

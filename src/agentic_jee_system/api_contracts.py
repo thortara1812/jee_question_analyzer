@@ -24,3 +24,4 @@ class JobSnapshot(Contract):
     status: Literal["queued", "running", "completed", "failed"]
     result: Result | None = None
     error: str | None = None
+    error_code: str | None = None

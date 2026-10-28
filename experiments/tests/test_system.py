@@ -207,7 +207,7 @@ class ReliabilityTests(unittest.TestCase):
 
     def test_malformed_stage_output_fails_closed(self):
         backend = CrewBackend(Settings(min_interval=0))
-        with patch("crewai.Agent") as agent, patch("crewai.LLM"):
+        with patch("crewai.Agent") as agent, patch("agentic_jee_system.backend.make_llm"):
             agent.return_value.kickoff.return_value = SimpleNamespace(raw='{"answer":"400"}', usage_metrics=None)
             with self.assertRaises(ServiceError):
                 backend.ask("Test", "Return analysis", {}, Analysis)

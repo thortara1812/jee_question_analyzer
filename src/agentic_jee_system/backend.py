@@ -49,6 +49,17 @@ def pace(interval):
         _next_request = time.monotonic() + interval
 
 
+def make_llm(settings: Settings):
+    """Select the scoped Groq adapter without importing CrewAI at API startup."""
+    from crewai import LLM
+    implementation = LLM
+    if settings.model.startswith("groq/"):
+        from .groq_llm import GroqCompatibleLLM
+        implementation = GroqCompatibleLLM
+    return implementation(model=settings.model, max_tokens=settings.max_tokens,
+                          timeout=settings.timeout, temperature=0, num_retries=0)
+
+
 class CrewBackend:
     def __init__(self, settings=None):
         self.settings = settings or Settings.from_env()
@@ -56,7 +67,7 @@ class CrewBackend:
         self.tool_calls = []
 
     def ask(self, role, instruction, payload, schema, *, tools=False):
-        from crewai import Agent, LLM
+        from crewai import Agent
         settings = self.settings
         format_instruction = (
             "Use the registered calculators first for numerical problems. Then call the JSON tool to submit the result. "
@@ -79,8 +90,7 @@ class CrewBackend:
                                               payload.get("analysis", {}).get("calculation_required", False))]
             agent = Agent(role=role, goal=instruction,
                 backstory="Precise JEE educator. Report uncertainty and check units.",
-                llm=LLM(model=settings.model, max_tokens=settings.max_tokens,
-                        timeout=settings.timeout, temperature=0, num_retries=0),
+                llm=make_llm(settings),
                 tools=registered,
                 verbose=False, allow_delegation=False, cache=False, max_iter=4,
                 max_retry_limit=0, max_execution_time=int(settings.timeout))
@@ -102,4 +112,4 @@ class CrewBackend:
                 raise ValueError
             return schema.model_validate_json(raw)
         except (ValidationError, ValueError, AttributeError):
-            raise ServiceError("A reasoning stage returned invalid structured data. Please retry.") from None
+            raise ServiceError("A reasoning stage returned invalid structured data. Please retry.", code="invalid_output") from None

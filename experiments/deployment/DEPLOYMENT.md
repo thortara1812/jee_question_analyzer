@@ -113,6 +113,11 @@ and instance. The frontend waits up to 10 minutes using short polling requests.
 It does not retry uncertain submissions automatically. HTTP requests originate
 from the Streamlit server, so browser CORS configuration is not required.
 
+If Groq reports `cache_breakpoint is unsupported`, deploy the latest compatibility
+fix described in [GROQ_COMPATIBILITY.md](GROQ_COMPATIBILITY.md). Changing API keys
+does not address that unsupported request field. Reboot the frontend after a
+backend/client contract update so both hosts use matching code.
+
 ## Local deployment validation
 
 ```powershell

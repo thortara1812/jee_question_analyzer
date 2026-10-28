@@ -69,6 +69,14 @@ class APITests(unittest.TestCase):
                 run_remote(**PAYLOAD, client=client, sleep=lambda _: time.sleep(.005), wait_seconds=2)
             self.assertNotIn("SECRET_PROVIDER_DATA", str(ctx.exception))
 
+    def test_safe_provider_failure_category_reaches_frontend(self):
+        def failed(*_):
+            raise ServiceError("SECRET provider text", code="rate_limit")
+        with patch.dict("os.environ", ENV), TestClient(create_app(failed), headers=AUTH) as client:
+            with self.assertRaisesRegex(ServiceError, "rate limit") as ctx:
+                run_remote(**PAYLOAD, client=client, sleep=lambda _: time.sleep(.005), wait_seconds=2)
+            self.assertNotIn("SECRET", str(ctx.exception))
+
 
 class APIClientTests(unittest.TestCase):
     def test_html_streamlit_page_is_not_accepted_as_api(self):

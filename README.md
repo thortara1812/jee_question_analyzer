@@ -80,6 +80,7 @@ uv.lock                    Reproducible dependency versions
 src/agentic_jee_system/
   workflow.py              Routing, reasoning stages and verification gates
   backend.py               CrewAI agents and model configuration
+  groq_llm.py              Scoped Groq request compatibility adapter
   schemas.py               Validated stage outputs
   reliability.py           API retries and error handling
   evidence.py              Optional external evidence retrieval

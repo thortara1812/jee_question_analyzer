@@ -5,7 +5,7 @@ import time
 from uuid import uuid4
 
 from .api_contracts import JobRequest, JobSnapshot
-from .reliability import ServiceError
+from .reliability import PUBLIC_FAILURES, ServiceError
 from .schemas import Result
 
 
@@ -61,9 +61,10 @@ class JobManager:
                 self.jobs[job_id].status = "completed"
         except Exception as exc:
             # Never return provider exceptions, tracebacks or request data.
-            error = str(exc) if isinstance(exc, ServiceError) else "The backend workflow could not complete. Please retry later."
+            code = exc.code if isinstance(exc, ServiceError) and exc.code in PUBLIC_FAILURES else "workflow_failed"
             with self.lock:
-                self.jobs[job_id].error = error
+                self.jobs[job_id].error = PUBLIC_FAILURES[code]
+                self.jobs[job_id].error_code = code
                 self.jobs[job_id].status = "failed"
         finally:
             with self.lock:
