@@ -1,0 +1,13 @@
+.git
+.env
+.env.*
+!.env.example
+.venv
+.venv-validation
+.local
+__pycache__
+**/__pycache__
+*.pyc
+output
+experiments/artifacts
+.streamlit/secrets.toml

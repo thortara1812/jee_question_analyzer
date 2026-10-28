@@ -1,6 +1,8 @@
 """Student interface with explicit requests and optional local history."""
 import sqlite3
+import os
 import streamlit as st
+from dotenv import load_dotenv
 from agentic_jee_system.history import clear, recent, save
 from agentic_jee_system.reliability import ServiceError
 from agentic_jee_system.workflow import compose, run
@@ -8,6 +10,18 @@ from agentic_jee_system.schemas import Result
 from agentic_jee_system.presentation import student_text
 
 st.set_page_config(page_title="Agentic JEE Assistant", page_icon="🎓", layout="wide")
+# Reading the secrets store promotes root-level Cloud secrets to environment
+# variables before Settings or optional search reads them. Values are never shown.
+try:
+    st.secrets.to_dict()
+except FileNotFoundError:
+    pass
+load_dotenv()
+history_mode = os.getenv("JEE_HISTORY_MODE", "session").lower()
+if history_mode not in {"session", "local"}:
+    st.error("JEE_HISTORY_MODE must be session or local.")
+    st.stop()
+st.session_state.setdefault("request_history", [])
 st.title("Agentic JEE Assistant")
 st.caption("Analysis → solver with tools → independent verification → deterministic response")
 SAMPLES = {
@@ -35,12 +49,15 @@ def display_markdown(data):
 with st.sidebar:
     mode = st.radio("Workflow", ["solve", "fact_check"], format_func=lambda x: "Question solving" if x == "solve" else "Fact checking")
     subject = st.selectbox("Subject", ["Auto", *SAMPLES])
-    store = st.checkbox("Save requests on this computer", value=False,
-                        help="Keeps up to 100 requests in .local/history.sqlite3. Off by default.")
-    st.caption("External search requires TAVILY_API_KEY. Credentials are read from local environment configuration.")
-    if st.button("Clear local history"):
+    store = st.checkbox("Save requests on this computer" if history_mode == "local" else "Keep history in this session", value=False,
+                        help="Local mode uses SQLite; session mode is private to this browser session and resets on disconnect.")
+    st.caption("External search requires TAVILY_API_KEY. Credentials are read from secure server configuration.")
+    if st.button("Clear local history" if history_mode == "local" else "Clear session history"):
         try:
-            clear()
+            if history_mode == "local":
+                clear()
+            else:
+                st.session_state.request_history = []
             st.success("History cleared.")
         except (OSError, sqlite3.Error):
             st.warning("Local history is unavailable.")
@@ -60,7 +77,11 @@ if submitted:
         st.session_state.result = result.model_dump(mode="json")
         if store:
             try:
-                save(question, result)
+                if history_mode == "local":
+                    save(question, result)
+                else:
+                    st.session_state.request_history.insert(0, {"question": question, "result": result.model_dump(mode="json")})
+                    st.session_state.request_history = st.session_state.request_history[:20]
             except (OSError, sqlite3.Error):
                 st.warning("Result is available, but history could not be saved.")
     except (ValueError, ServiceError) as exc:
@@ -81,10 +102,11 @@ if st.session_state.get("result"):
                 st.link_button("Open source", item["url"])
                 st.write(item["excerpt"])
 
-with st.expander("Previous locally saved requests"):
+with st.expander("Previous locally saved requests" if history_mode == "local" else "Previous requests in this session"):
     try:
-        for item in recent():
-            st.caption(item["created"] + " UTC")
+        for item in (recent() if history_mode == "local" else st.session_state.request_history):
+            if "created" in item:
+                st.caption(item["created"] + " UTC")
             st.write(item["question"])
             st.markdown(display_markdown(item["result"]))
     except (OSError, sqlite3.Error):

@@ -1,0 +1,36 @@
+services:
+  - type: web
+    name: agentic-jee-assistant
+    runtime: python
+    plan: free
+    buildCommand: uv sync --locked --no-dev
+    startCommand: .venv/bin/python -m streamlit run app.py --server.address 0.0.0.0 --server.port $PORT
+    healthCheckPath: /_stcore/health
+    autoDeployTrigger: commit
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.12.14"
+      - key: UV_VERSION
+        value: "0.12.16"
+      - key: GROQ_API_KEY
+        sync: false
+      - key: JEE_MODEL
+        value: groq/openai/gpt-oss-120b
+      - key: JEE_HISTORY_MODE
+        value: session
+      - key: JEE_MAX_TOKENS
+        value: "900"
+      - key: JEE_MIN_INTERVAL
+        value: "20"
+      - key: JEE_ATTEMPTS
+        value: "3"
+      - key: JEE_TIMEOUT
+        value: "60"
+      - key: PYTHONUTF8
+        value: "1"
+      - key: CREWAI_TRACING_ENABLED
+        value: "false"
+      - key: OTEL_SDK_DISABLED
+        value: "true"
+      - key: LITELLM_LOCAL_MODEL_COST_MAP
+        value: "true"

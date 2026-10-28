@@ -11,6 +11,24 @@ APP = str(Path(__file__).resolve().parents[2] / "app.py")
 
 
 class UITests(unittest.TestCase):
+    def test_cloud_history_does_not_read_shared_sqlite(self):
+        with patch.dict("os.environ", {"JEE_HISTORY_MODE": "session"}), patch("agentic_jee_system.history.recent") as shared:
+            app = AppTest.from_file(APP, default_timeout=30).run()
+            self.assertEqual(len(app.exception), 0)
+            shared.assert_not_called()
+
+    def test_session_history_does_not_leak_to_another_browser(self):
+        result = Result(mode="solve", status="needs_review", markdown="Private session example.")
+        with patch.dict("os.environ", {"JEE_HISTORY_MODE": "session"}), patch("agentic_jee_system.workflow.run", return_value=result), patch("agentic_jee_system.history.save") as disk:
+            first = AppTest.from_file(APP, default_timeout=30).run()
+            first.checkbox[0].check().run()
+            first.text_area[0].set_value("Private question").run()
+            next(button for button in first.button if button.label == "Run / retry").click().run()
+            self.assertEqual(len(first.session_state.request_history), 1)
+            second = AppTest.from_file(APP, default_timeout=30).run()
+            self.assertEqual(second.session_state.request_history, [])
+            disk.assert_not_called()
+
     def test_example_callback_and_empty_submission(self):
         app = AppTest.from_file(APP, default_timeout=30).run()
         self.assertEqual(len(app.exception), 0)

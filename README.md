@@ -3,6 +3,20 @@
 A CrewAI-based application for Mathematics, Physics and Chemistry questions,
 with a separate educational fact-checking mode.
 
+## Deploy
+
+[Deploy to Render](https://render.com/deploy?repo=https://github.com/thortara1812/jee_question_analyzer)
+
+For Streamlit Community Cloud, select repository
+`thortara1812/jee_question_analyzer`, branch `main`, entrypoint `app.py`, and
+Python 3.12. Use `.streamlit/secrets.toml.example` as the cloud-secret template.
+See [the deployment guide](experiments/deployment/DEPLOYMENT.md) for both hosts.
+Never upload `.env` or a populated `.streamlit/secrets.toml` to GitHub.
+
+Cloud history is private to the browser session and disappears when the session
+ends. `JEE_HISTORY_MODE=local` explicitly enables the old SQLite history for a
+single-user local installation; do not use shared local history on a public app.
+
 ## Run on Windows
 
 From this folder in PowerShell:
