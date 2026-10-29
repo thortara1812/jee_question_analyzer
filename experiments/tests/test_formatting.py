@@ -1,9 +1,31 @@
 import unittest
 
-from agentic_jee_system.presentation import formula_block, student_text
+from agentic_jee_system.presentation import formula_block, student_text, presentation_blocks
 
 
 class StudentFormattingTests(unittest.TestCase):
+    def test_incline_equations_and_numbered_prose_render_separately(self):
+        text = r'''**Solution**
+1. Let the length of the incline be $L$.
+a_s = g\sin\theta
+$$
+2. With kinetic friction the net acceleration is
+$$
+a_r = g\bigl(\sin\theta-\mu\cos\theta\bigr)
+3. For constant acceleration the time to travel distance $L$ is
+t_s = \sqrt{\frac{2L}{a_s}}
+t_r = \sqrt{\frac{2L}{a_r}}
+$$\mu = \frac{3}{4} = 0.75$$
+**Answer: option (c).**'''
+        blocks = list(presentation_blocks(text))
+        equations = [value for kind, value in blocks if kind == 'latex']
+        self.assertEqual(len(equations), 5)
+        self.assertIn(r'a_s = g\sin\theta', equations)
+        self.assertTrue(all('$' not in equation for equation in equations))
+        prose = '\n'.join(value for kind, value in blocks if kind == 'markdown')
+        self.assertIn('With kinetic friction', prose)
+        self.assertIn('For constant acceleration', prose)
+        self.assertIn('option (c)', prose)
     def test_spaced_arrow_chain_has_no_dangling_backslashes(self):
         value = student_text(r"$$t=\sqrt{2s/a}\;\Rightarrow\; a_s=4a_r$$")
         self.assertEqual(value, "$$\nt=\\sqrt{2s/a}\n$$\n\n$$\na_s=4a_r\n$$")

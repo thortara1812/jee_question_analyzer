@@ -169,5 +169,5 @@ def run_readable(text, subject, backend):
         "when the image text or assumptions are unclear. No JSON or required output fields.",
         context + "\nAnalysis:\n" + analysis + "\nCandidate solution:\n" + solution, tools=True)
     return Result(mode="solve", status="completed",
-        markdown=student_text(solution) + "\n\n**Independent review**\n\n" + student_text(review),
+        markdown=solution + "\n\n**Independent review**\n\n" + review,
         tool_calls=backend.tool_calls, metrics=backend.metrics)

@@ -47,3 +47,48 @@ def formula_block(formula: str) -> str:
     formula = formula.removeprefix("$$").removesuffix("$$").strip("$")
     formula = re.sub(r"^\\[\[(]|\\[\])]$", "", formula).strip(" ;\n")
     return "\n\n".join("$$\n" + equation.strip() + "\n$$" for equation in formula.split(";") if equation.strip())
+
+
+def presentation_blocks(text: str):
+    """Render display math separately so a stray delimiter cannot swallow prose.
+
+    Standalone equations are recognized even when model delimiters are missing.
+    Inline math stays in Markdown; no model call or answer substitution is used.
+    """
+    text = re.sub(r"\\\[(.*?)\\\]", r"\n$$\n\1\n$$\n", text, flags=re.DOTALL)
+    text = re.sub(r"\\\((.*?)\\\)", r"$\1$", text, flags=re.DOTALL)
+    text = text.replace("$$", "\n$$\n")
+    pending = []
+    def flush():
+        if pending:
+            value = "\n".join(pending).strip()
+            pending.clear()
+            if value:
+                return ("markdown", value)
+        return None
+    for line in text.splitlines():
+        value = line.strip()
+        if value == "$$":
+            block = flush()
+            if block:
+                yield block
+            continue
+        # Prose headings and explanatory sentences must never enter st.latex.
+        prose = bool(re.match(r"(?:\d+[.)]\s+|\*\*|#{1,6}\s)", value))
+        plain_words = re.findall(r"\b[A-Za-z]{3,}\b", re.sub(r"\\[A-Za-z]+|\\text\{[^}]*\}", "", value))
+        equation = ("=" in value and not prose and len(plain_words) <= 2)
+        if equation:
+            block = flush()
+            if block:
+                yield block
+            value = value.replace("$", "")
+            value = re.sub(_SPACING, " ", value)
+            for equation in re.split(_ARROW, value):
+                equation = equation.strip(" ;$")
+                if equation:
+                    yield ("latex", equation)
+        else:
+            pending.append(line)
+    block = flush()
+    if block:
+        yield block

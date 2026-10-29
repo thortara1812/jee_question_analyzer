@@ -7,7 +7,7 @@ from agentic_jee_system.history import clear, recent, save
 from agentic_jee_system.reliability import ServiceError
 from agentic_jee_system.workflow import compose, run
 from agentic_jee_system.schemas import Result
-from agentic_jee_system.presentation import student_text
+from agentic_jee_system.presentation import student_text, presentation_blocks
 from agentic_jee_system.api_client import run_remote, transcribe_remote
 
 st.set_page_config(page_title="Agentic JEE Assistant", page_icon="🎓", layout="wide")
@@ -26,7 +26,7 @@ st.session_state.setdefault("request_history", [])
 st.session_state.setdefault("backend_request", {})
 st.title("Agentic JEE Assistant")
 st.caption("Analysis → solver with tools → independent verification → deterministic response")
-st.caption("App build: image-recovery-v3")
+st.caption("App build: equation-render-v4")
 SAMPLES = {
     "Mathematics": "Solve 2x + 5 = 15.",
     "Physics": "A 2 kg block starts from rest under an 8 N horizontal force on a frictionless surface for 5 seconds. Find its final kinetic energy.",
@@ -45,8 +45,17 @@ def display_markdown(data):
     if result.mode == "solve":
         if result.analysis and result.solution and result.verification:
             return compose(result.analysis, result.solution, result.verification)
-        return student_text(result.markdown)
+        return result.markdown
     return result.markdown
+
+
+def display_answer(data):
+    # st.latex isolates each equation from surrounding Markdown/list delimiters.
+    for kind, value in presentation_blocks(display_markdown(data)):
+        if kind == "latex":
+            st.latex(value)
+        else:
+            st.markdown(value)
 
 
 with st.sidebar:
@@ -126,7 +135,7 @@ if submitted:
 if st.session_state.get("result"):
     result = st.session_state.result
     st.caption(f"Workflow: {result['mode']} · Status: {result['status']}")
-    st.markdown(display_markdown(result))
+    display_answer(result)
     with st.expander("Computational tool use"):
         st.json(result["tool_calls"] or {"note": "No computational tool invocation recorded."})
     if result["evidence"]:
@@ -142,7 +151,7 @@ with st.expander("Previous locally saved requests" if history_mode == "local" el
             if "created" in item:
                 st.caption(item["created"] + " UTC")
             st.write(item["question"])
-            st.markdown(display_markdown(item["result"]))
+            display_answer(item["result"])
     except (OSError, sqlite3.Error):
         st.info("Local history is unavailable.")
 st.caption("Verification is an additional check, not a guarantee. Review answers against your textbook.")
